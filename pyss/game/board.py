@@ -46,6 +46,16 @@ class Chessboard:
 
         return pieces
     
+    # remove piece from active pieces
+    def remove_piece(self, position):
+        """Removes a piece from the board"""
+        self.board[position[0]][position[1]] = None
+        # find piece in active pieces
+        for real_position, piece in self.active_pieces.items():
+            if piece == position:
+                del self.active_pieces[real_position]
+                break
+    
     @lru_cache(maxsize=32)
     def valid_moves(self, i, j):
         """Returns a list of valid moves for a given piece"""
@@ -98,7 +108,7 @@ class Chessboard:
             # check if the space is occupied by a friendly piece
             if self.board[next_position[0]][next_position[1]] and self.board[next_position[0]][next_position[1]].color == self.board[position[0]][position[1]].color:
                 return False
-            # if it's an enemy piece, chekc if we've already seen one or set that we have
+            # if it's an enemy piece, check if we've already seen one or set that we have
             elif self.board[next_position[0]][next_position[1]]:
                 if seen_enemy:
                     return False
@@ -106,15 +116,13 @@ class Chessboard:
 
         return True
 
-    def move(self, piece, position):
+    def move(self, position, new_position):
         """ Unsafely moves a piece destroying any piece that is in the destionatoin. """
-        self.board[piece.position[0]][piece.position[1]] = None
-        # if move is going to capture a piece, remove it from the active pieces
-        if self.board[position[0]][position[1]]:
-            self._active_pieces.remove(self.board[position[0]][position[1]])
-
-        self.board[position[0]][position[1]] = piece
-        piece.position = position
+        piece = self.board[position[0]][position[1]]
+        if self.board[new_position[0]][new_position[1]]:
+            self.remove_piece(new_position)
+        self.board[new_position[0]][new_position[1]] = piece
+        self.board[position[0]][position[1]] = None
         self._updated = True
     
     # define index access to board

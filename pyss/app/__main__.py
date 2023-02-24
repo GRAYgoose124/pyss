@@ -133,9 +133,12 @@ class ChessApp(arcade.Window):
             i, j = self.get_tile(x, y)
             logger.debug(f"Clicked pos: {x, y} -> {i, j}")
 
-            self.select_piece_handler(i, j)
+            made_move = False
+            if self.selected_piece is not None:
+                made_move = self.make_valid_move_handler(i, j)
 
-            self.play_board.consume_update = True
+            if not made_move:
+                self.select_piece_handler(i, j)
 
     def select_piece_handler(self, i, j):
         """Select a piece, or deselect if already selected."""
@@ -148,6 +151,15 @@ class ChessApp(arcade.Window):
         else:
             self.selected_piece = None
     
+    def make_valid_move_handler(self, i, j):
+        """Make a valid move."""
+        if (i, j) in self._selected_valid_moves:
+            self.play_board.move(self.selected_piece, (i, j))
+            self.selected_piece = None
+            self.old_selected_piece = None
+            self._selected_valid_moves = []
+            return True
+        
   
 
 def main():
