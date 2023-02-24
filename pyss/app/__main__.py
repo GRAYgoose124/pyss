@@ -19,8 +19,10 @@ class ChessApp(arcade.Window):
         self.play_board = None
         self._board = None
         self._rotate = rotate
+        self._selected_valid_moves = []
 
         self.selected_piece = None
+        self.old_selected_piece = None
         
     def setup(self):
         self.play_board = Chessboard()
@@ -87,30 +89,34 @@ class ChessApp(arcade.Window):
             return
 
         i, j = self.selected_piece
-        for move in self.play_board.valid_moves(i, j):
+        if self.selected_piece != self.old_selected_piece:
+            self._selected_valid_moves = self.play_board.valid_moves(i, j)
+            self.old_selected_piece = self.selected_piece
+        
+        if self._selected_valid_moves is None:
+            return
+
+        for move in self._selected_valid_moves:
             ix, jx = move
             if self._rotate:
                 ix, jx = jx, ix
             else:
                 ix, jx = ix, jx
 
-            arcade.draw_rectangle_filled(self.offset[0] + (ix * self.tile_size + self.tile_size * 0.5), 
-                                          self.offset[1] + (jx * self.tile_size + self.tile_size * 0.5), 
-                                          self.tile_size, self.tile_size, arcade.color.YELLOW, 0)
-
+            # draw a rectangle half the size of the tile
+            arcade.draw_circle_filled(self.offset[0] + (ix * self.tile_size + self.tile_size * 0.5), 
+                                      self.offset[1] + (jx * self.tile_size + self.tile_size * 0.5), 
+                                      self.tile_size // 4, arcade.color.GREEN)
     def on_draw(self):
         arcade.start_render()
         self.board.draw()
-        self.draw_pieces()
         self.draw_valid_moves()
+
+        self.draw_pieces()
 
     def update(self, delta_time):
         if delta_time < 1/60:
             return
-
-        if self.play_board.updated:
-            logger.debug(f"Active pieces: {len(self.play_board.active_pieces)}")
-            self.play_board.consume_update = True
 
     def get_tile(self, x, y):
         """Get the tile at the given position, handling rotation."""
@@ -128,6 +134,8 @@ class ChessApp(arcade.Window):
             logger.debug(f"Clicked pos: {x, y} -> {i, j}")
 
             self.select_piece_handler(i, j)
+
+            self.play_board.consume_update = True
 
     def select_piece_handler(self, i, j):
         """Select a piece, or deselect if already selected."""

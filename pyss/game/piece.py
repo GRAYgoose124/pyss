@@ -126,14 +126,19 @@ piece_dict = {
 
 @dataclass
 class Piece:
-    color: Literal["black", "white"]
-    type: Literal["pawn", "rook", "knight", "bishop", "queen", "king"]
+    COLORS = Literal["white", "black"]
+    TYPES = Literal["pawn", "rook", "knight", "bishop", "queen", "king"]
+
+    POSITION = tuple[int, int]
+
+    color: COLORS
+    type: TYPES
     notation: str = field(init=False)
     value: int = field(init=False)
     unicode: str = field(init=False)
-    initial_positions: list[tuple[int, int]] = field(init=False)
-    valid_relative_moves: list[tuple[int, int]] = field(init=False)
-    valid_relative_captures: list[tuple[int, int]] = field(init=False)
+    initial_positions: list[POSITION] = field(init=False)
+    valid_relative_moves: list[POSITION] = field(init=False)
+    valid_relative_captures: list[POSITION] = field(init=False)
     displacement: int = field(init=False)
     value: int = field(init=False)
 
@@ -142,21 +147,23 @@ class Piece:
         valid_relative_captures = piece_dict[self.type]["valid_relative_captures"]
 
         # if valid_relative_captures is True, replace it with the valid_relative_moves and vice versa
-        if valid_relative_moves is True:
+        if valid_relative_moves == True:
             valid_relative_moves = valid_relative_captures
-        if valid_relative_captures is True:
+        if valid_relative_captures == True:
             valid_relative_captures = valid_relative_moves      
 
         # If there's a True in the valid_relative_moves or valid_relative_captures, 
         # replace it with the valid_relative_moves or valid_relative_captures for the piece's color
+        other_color = Piece.COLORS.__args__[0] if self.color == Piece.COLORS.__args__[1] else Piece.COLORS.__args__[1]
         if valid_relative_moves[self.color] is True:
-            valid_relative_moves = valid_relative_moves["black" if self.color == "white" else "white"]
+            valid_relative_moves = valid_relative_moves[other_color]
         if valid_relative_captures[self.color] is True:
-            valid_relative_captures = valid_relative_captures["black" if self.color == "white" else "white"]
+            valid_relative_captures = valid_relative_captures[other_color]
 
         logger.debug(f"Piece.__post_init__(): {self.color} {self.type}\n"
                      f"\tvalid_relative_moves: {valid_relative_moves}\n"
-                     f"\tvalid_relative_captures: {valid_relative_captures}")
+                     f"\tvalid_relative_captures: {valid_relative_captures}\n"
+                     f"\ttypes: {type(valid_relative_moves)} {type(valid_relative_captures)}")
 
         # Set the notation, unicode, initial_positions, valid_relative_moves, valid_relative_captures, displacement, and value
         self.notation = piece_dict[self.type]["notation"]
@@ -172,7 +179,7 @@ class Piece:
     @staticmethod
     def random_piece():
         """Returns a random piece"""
-        return Piece(choice(["white", "black"]), choice(["pawn", "rook", "knight", "bishop", "queen", "king"]))
+        return Piece(choice(Piece.COLORS.__args__), choice(Piece.TYPES.__args__))
 
     def valid_moves(self, i, j):
         """Returns a list of all valid moves moves from an absolute position (i, j)
@@ -180,37 +187,19 @@ class Piece:
 
         It considers displacement and the board's boundaries. (But not other pieces!)
         """
-        if self._valid_moves is None:
-            valid_moves = []
-            logger.debug(f"Generated valid moves for {self.color} {self.type} at ({i}, {j})\n\tvalid_relative_moves: {self.valid_relative_moves}\n\tvalid_relative_captures: {self.valid_relative_captures}")
+        valid_moves = []
+        logger.debug(f"Generated valid moves for {self.color} {self.type} at ({i}, {j})\n\tvalid_relative_moves: {self.valid_relative_moves}\n\tvalid_relative_captures: {self.valid_relative_captures}")
 
-            moves = set(self.valid_relative_moves + self.valid_relative_captures)
-            for relative_move in moves:
-                for displacement in range(1, self.displacement + 1):
-                    new_i, new_j = i + relative_move[0] * displacement, j + relative_move[1] * displacement
-                    if 0 <= new_i < 8 and 0 <= new_j < 8:
-                        valid_moves.append((new_i, new_j))
-                    else:
-                        break
-            self._valid_moves = valid_moves
+        moves = set(self.valid_relative_moves + self.valid_relative_captures)
+        for relative_move in moves:
+            for displacement in range(1, self.displacement + 1):
+                new_i, new_j = i + relative_move[0] * displacement, j + relative_move[1] * displacement
+                if 0 <= new_i < 8 and 0 <= new_j < 8:
+                    valid_moves.append((new_i, new_j))
+                else:
+                    break
 
-        return self._valid_moves
-    
-    def check_path(self, board, pos, new_pos):
-        """Checks if the path from pos to new_pos is clear.
-        Returns True if it is, False if it isn't.
-        """
-        relative_move = (new_pos[0] - pos[0], new_pos[1] - pos[1])
-        if relative_move not in self.valid_relative_moves:
-            return False
-
-        for displacement in range(1, self.displacement + 1):
-            new_i, new_j = pos[0] + relative_move[0] * displacement, pos[1] + relative_move[1] * displacement
-            if new_i == new_pos[0] and new_j == new_pos[1]:
-                return True
-            if board[new_i][new_j] is not None:
-                return False
-
+        return valid_moves
     
     def __str__(self):
         return self.notation.upper() if self.color == "white" else self.notation.lower()
