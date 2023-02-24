@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "pyss"
+version = "0.1.0"
+description = ""
+authors = ["Grayson Miller <grayson.miller124@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pydantic = "^1.10.5"
+arcade = "^2.6.17"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+pyss = "pyss.app.__main__:main"

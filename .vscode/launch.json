@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python Poetry",
+      "type": "python",
+      "request": "launch",
+      "module": "pychess",
+      "python": "/home/goose/.py311/bin/python3.11",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "/home/goose/.py311/lib/python3.11/site-packages"
+      },
+      "args": [],
+      "justMyCode": true
+    }
+  ]
+}
