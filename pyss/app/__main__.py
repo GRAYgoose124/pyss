@@ -5,7 +5,7 @@ from ..game.board import Chessboard
        
         
 class ChessApp(arcade.Window):
-    def __init__(self, width=800, height=800):
+    def __init__(self, width=800, height=800, rotate=True):
         super().__init__(width, height, "PγssChεss")
 
         self.tile_size = min(width, height) // 8
@@ -14,6 +14,9 @@ class ChessApp(arcade.Window):
 
         self.play_board = None
         self._board = None
+        self._rotate = rotate
+
+        self.selected_piece = None
         
     def setup(self):
         self.play_board = Chessboard()
@@ -42,9 +45,9 @@ class ChessApp(arcade.Window):
 
         self._board = board
     
-    def draw_piece(self, i, j, rotate=True):
+    def draw_piece(self, i, j):
         # rotate visual i, j 90 degrees clockwise
-        if not rotate:
+        if not self._rotate:
             ix, jx = i, j
         else:
             ix, jx = j, i
@@ -63,6 +66,15 @@ class ChessApp(arcade.Window):
         for i in range(8):
             for j in range(8):
                 if self.play_board[i, j]:
+                    if self.selected_piece == (i, j):
+                        if self._rotate:
+                            ix, jx = j, i
+                        else:
+                            ix, jx = i, j
+
+                        arcade.draw_rectangle_outline(self.offset[0] + (ix * self.tile_size + self.tile_size * 0.5), 
+                                                      self.offset[1] + (jx * self.tile_size + self.tile_size * 0.5), 
+                                                      self.tile_size, self.tile_size, arcade.color.RED, 2)
                     self.draw_piece(i, j)
 
     def on_draw(self):
@@ -78,6 +90,25 @@ class ChessApp(arcade.Window):
         if self.play_board.updated:
             print("Active pieces:", len(self.play_board.active_pieces))
             self.play_board.consume_update = True
+
+    def get_tile(self, x, y):
+        i = (x - self.offset[0]) // self.tile_size
+        j = (y - self.offset[1]) // self.tile_size
+        if self._rotate:
+            return j, i
+        
+        return i, j
+
+
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            i, j = self.get_tile(x, y)
+            print(f"Clicked pos: {x, y} -> {i, j}")
+
+            if self.play_board[i, j]:
+                self.selected_piece = i, j
+                print(self.play_board[i, j].unicode)
 
 
 def main():

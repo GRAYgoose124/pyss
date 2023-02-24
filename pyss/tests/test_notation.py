@@ -19,6 +19,7 @@ class TestSuite:
         print(parse_notation(game_notes))
 
     def test_generate_notation(self):
+        # TODO: These tuples are (column, row) ?
         # f2-f4
         assert generate_notation("pawn", "", (1, 5), (3, 5)) == "f2-f4"
         # e7-e5

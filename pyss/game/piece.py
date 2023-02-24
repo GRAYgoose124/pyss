@@ -164,7 +164,7 @@ class Piece:
         return Piece(choice(["white", "black"]), choice(["pawn", "rook", "knight", "bishop", "queen", "king"]))
 
     def __str__(self):
-        return self.notation[self.type].upper() if self.color == "white" else self.notation[self.type].lower()
+        return self.notation.upper() if self.color == "white" else self.notation.lower()
     
     def __hash__(self) -> int:
         return id(self)
