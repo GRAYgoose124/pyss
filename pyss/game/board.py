@@ -10,12 +10,6 @@ class Chessboard:
     def __init__(self):
         self.reset()
 
-    def reset(self):
-        """Resets the board to its initial state"""
-        self.board = Chessboard.initialize_board()
-        self._active_pieces = None
-        self._updated = True
-
     @staticmethod
     def initialize_board():
         board = [[None for _ in range(8)] for _ in range(8)]
@@ -25,6 +19,12 @@ class Chessboard:
                 for position in piece_dict[piece]["initial_positions"][color]:
                     board[position[0]][position[1]] = Piece(color, piece)
         return board
+    
+    def reset(self):
+        """Resets the board to its initial state"""
+        self._active_pieces = None
+        self._updated = True
+        self.board = Chessboard.initialize_board()
 
     @property
     def updated(self):
@@ -45,52 +45,24 @@ class Chessboard:
         if self._active_pieces:
             return self._active_pieces
 
-        pieces = []
-        for row in self.board:
-            for piece in row:
+        pieces = {}
+        for i, row in enumerate(self.board):
+            for j, piece in enumerate(row):
                 if piece:
-                    pieces.append(piece)
+                    pieces[piece] = (i, j)
 
         return pieces
 
     def move(self, piece, position):
-        """Moves a piece to a new position"""
+        """ Unsafely moves a piece destroying any piece that is in the destionatoin. """
         self.board[piece.position[0]][piece.position[1]] = None
+        # if move is going to capture a piece, remove it from the active pieces
+        if self.board[position[0]][position[1]]:
+            self._active_pieces.remove(self.board[position[0]][position[1]])
+
         self.board[position[0]][position[1]] = piece
         piece.position = position
         self._updated = True
-
-    # position cmds
-    # TODO: parse position as tuple or notation
-    # TODO: parse move as tuple or notation
-    def get_notation(self, position, move=None, capture=False):
-        """Returns the notation of the piece at a given position"""
-        piece = self.board[position[0]][position[1]]
-
-        # TODO: Unhandled cases: pawn promotion, castling, en passant
-        if piece.piece_type == "pawn":
-            if capture:
-                notation = f"{self.get_file(position)}x{move}"
-            elif move:
-                notation = move
-            else:
-                notation = self.get_file(position)
-        else:
-            if not move:
-                move = f"{self.get_file(position)}{self.get_rank(position)}"
-            notation = f"{piece.notation}{'x' if capture else ''}{move}"
-        
-        return notation
-    
-    @staticmethod
-    def get_file(position):
-        """Returns the file of a given position"""
-        return chr(ord('a') + position[1])
-    
-    @staticmethod
-    def get_rank(position):
-        """Returns the rank of a given position"""
-        return position[0] + 1
     
     # define index access to board
     def __getitem__(self, key):

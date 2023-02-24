@@ -13,11 +13,17 @@ class ChessApp(arcade.Window):
         self.offset = (self.width - self.board_size) // 2, (self.height - self.board_size) // 2
 
         self.play_board = None
-        self.board = None
+        self._board = None
         
     def setup(self):
         self.play_board = Chessboard()
         self.create_board()
+
+    @property
+    def board(self):
+        if self._board is None:
+            self.create_board()
+        return self._board
 
     def create_board(self):
         board = arcade.ShapeElementList()
@@ -34,7 +40,7 @@ class ChessApp(arcade.Window):
 
                 board.append(tile)
 
-        self.board = board
+        self._board = board
     
     def draw_piece(self, i, j, rotate=True):
         # rotate visual i, j 90 degrees clockwise
