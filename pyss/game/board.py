@@ -1,5 +1,6 @@
 from .piece import piece_dict, Piece
 
+
 class Chessboard:
     """Represents a chessboard
 
@@ -30,7 +31,6 @@ class Chessboard:
     def updated(self):
         """Check if the board has updated since last call. """
         if self._updated:
-            self._updated = False
             return True
         return False
     
@@ -52,6 +52,41 @@ class Chessboard:
                     pieces[piece] = (i, j)
 
         return pieces
+    
+    def valid_moves(self, i, j):
+        """Returns a list of valid moves for a given piece"""
+        piece = self.board[i][j]
+        if not piece:
+            return []
+
+        moves = []
+        for move in piece.valid_moves(i, j):
+            if self.board_valid_move(piece, (i, j), move):
+                moves.append(move)
+        return moves        
+
+    def board_valid_move(self, piece, position, new_position):
+        """Checks if a move is valid"""
+        # check if new position is in bounds
+        if new_position[0] < 0 or new_position[0] > 7 or new_position[1] < 0 or new_position[1] > 7:
+            return False
+
+        # check if move is to the same position
+        if new_position == position:
+            return False
+
+        # check if move is to an occupied square by same team
+        if self.board[new_position[0]][new_position[1]] and self.board[new_position[0]][new_position[1]].color == piece.color:
+            return False
+        
+        # see if there is not a piece in the way
+        if piece.type in ["rook", "bishop", "queen"]:
+            # check if there is a piece in the way
+            if not piece.check_path(self.board, position, new_position):
+                return False
+
+        return True
+
 
     def move(self, piece, position):
         """ Unsafely moves a piece destroying any piece that is in the destionatoin. """

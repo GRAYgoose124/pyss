@@ -1,12 +1,16 @@
 import arcade
+import logging
 
 from ..game.board import Chessboard
 
-       
+
+APP_NAME = "PγssChεss"
+logger = logging.getLogger(APP_NAME)
+  
         
 class ChessApp(arcade.Window):
     def __init__(self, width=800, height=800, rotate=True):
-        super().__init__(width, height, "PγssChεss")
+        super().__init__(width, height, APP_NAME)
 
         self.tile_size = min(width, height) // 8
         self.board_size = self.tile_size * 8
@@ -77,21 +81,39 @@ class ChessApp(arcade.Window):
                                                       self.tile_size, self.tile_size, arcade.color.RED, 2)
                     self.draw_piece(i, j)
 
+    def draw_valid_moves(self):
+        """Show valid moves for selected piece."""
+        if self.selected_piece is None:
+            return
+
+        i, j = self.selected_piece
+        for move in self.play_board.valid_moves(i, j):
+            ix, jx = move
+            if self._rotate:
+                ix, jx = jx, ix
+            else:
+                ix, jx = ix, jx
+
+            arcade.draw_rectangle_filled(self.offset[0] + (ix * self.tile_size + self.tile_size * 0.5), 
+                                          self.offset[1] + (jx * self.tile_size + self.tile_size * 0.5), 
+                                          self.tile_size, self.tile_size, arcade.color.YELLOW, 0)
+
     def on_draw(self):
         arcade.start_render()
         self.board.draw()
         self.draw_pieces()
+        self.draw_valid_moves()
 
     def update(self, delta_time):
         if delta_time < 1/60:
-            # randomly move a piece
             return
 
         if self.play_board.updated:
-            print("Active pieces:", len(self.play_board.active_pieces))
+            logger.debug(f"Active pieces: {len(self.play_board.active_pieces)}")
             self.play_board.consume_update = True
 
     def get_tile(self, x, y):
+        """Get the tile at the given position, handling rotation."""
         i = (x - self.offset[0]) // self.tile_size
         j = (y - self.offset[1]) // self.tile_size
         if self._rotate:
@@ -99,24 +121,36 @@ class ChessApp(arcade.Window):
         
         return i, j
 
-
-
+    # interaction
     def on_mouse_press(self, x, y, button, modifiers):
         if button == arcade.MOUSE_BUTTON_LEFT:
             i, j = self.get_tile(x, y)
-            print(f"Clicked pos: {x, y} -> {i, j}")
+            logger.debug(f"Clicked pos: {x, y} -> {i, j}")
 
-            if self.play_board[i, j]:
+            self.select_piece_handler(i, j)
+
+    def select_piece_handler(self, i, j):
+        """Select a piece, or deselect if already selected."""
+        if self.play_board[i, j]:
+            if self.selected_piece == (i, j):
+                self.selected_piece = None
+            else:
                 self.selected_piece = i, j
                 print(self.play_board[i, j].unicode)
-
+        else:
+            self.selected_piece = None
+    
+  
 
 def main():
+    logging.basicConfig(level=logging.DEBUG, 
+                        format="[%(levelname)s] %(name)s | %(message)s")
+    logging.getLogger("arcade").setLevel(logging.INFO)
+
     app = ChessApp()
     app.setup()
+
     arcade.run()
-
-
 
 
 if __name__ == "__main__":
