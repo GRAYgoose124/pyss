@@ -1,4 +1,6 @@
 import logging
+import yaml
+import os
 
 from dataclasses import dataclass, field
 from random import choice
@@ -8,101 +10,14 @@ from typing import Literal
 logger = logging.getLogger(__name__)
 
 
-# piece_dict[piece_type] contains the notation and both unicode characters
-# for each piece
-piece_dict = {
-    "pawn": {
-        "notation": "p",
-        "unicode": {
-            "white": "♙",
-            "black": "♟"
-        },
-        "initial_positions": {
-            "white": [(6, i) for i in range(8)],
-            "black": [(1, i) for i in range(8)]
-        },
-        "valid_relative_moves": {
-            "white": [(-1, 0)],
-            "black": [(1, 0)]
-        },
-        "valid_captures": {
-            "white": [(-1, -1), (-1, 1)],
-            "black": [(1, 1), (1, -1)]
-        },
-        "displacement": 1,
-        "value": 1
-    },
-    "rook": {
-        "notation": "R",
-        "unicode": {
-            "white": "♖",
-            "black": "♜"
-        },
-        "initial_positions": {
-            "white": [(7, 0), (7, 7)],
-            "black": [(0, 0), (0, 7)]
-        },
-        "valid_relative_moves": [(0, 1), (0, -1), (1, 0), (-1, 0)],
-        "displacement": 7,
-        "value": 5
-    },
-    "knight": {
-        "notation": "N",
-        "unicode": {
-            "white": "♘",
-            "black": "♞"
-        },
-        "initial_positions": {
-            "white": [(7, 1), (7, 6)],
-            "black": [(0, 1), (0, 6)]
-        },
-        "valid_relative_moves": [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (1, -2), (-1, 2), (-1, -2)],
-        "displacement": 1,
-        "value": 3
-    },
-    "bishop": {
-        "notation": "B",
-        "unicode": {
-            "white": "♗",
-            "black": "♝"
-        },
-        "initial_positions": {
-            "white": [(7, 2), (7, 5)],
-            "black": [(0, 2), (0, 5)]
-        },
-        "valid_relative_moves": [(1, 1), (1, -1), (-1, 1), (-1, -1)],
-        "displacement": 7,
-        "value": 3
-    },
-    "queen": {
-        "notation": "Q",
-        "unicode": {
-            "white": "♕",
-            "black": "♛"
-        },
-        "initial_positions": {
-            "white": [(7, 3)],
-            "black": [(0, 3)]
-        },
-        "valid_relative_moves": [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)],
-        "displacement": 7,
-        "value": 9
-    },
-    "king": {
-        "notation": "K",
-        "unicode": {
-            "white": "♔",
-            "black": "♚"
-        },
-        "initial_positions": {
-            "white": [(7, 4)],
-            "black": [(0, 4)]
-        },
-        "valid_relative_moves": [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)],
-        "displacement": 1,
-        "value": 0
-    }
-}
+try:
+    # get dir piece.py is in
+    root = os.path.dirname(os.path.realpath(__file__))
+    with open(os.path.join(root, "data/piece_dict.yaml"), "r") as f:
+        piece_dict = yaml.unsafe_load(f)
+except Exception as e:
+    print(e)
+    print("Using default piece_dict!")
 
 
 @dataclass
@@ -124,6 +39,8 @@ class Piece:
     value: int = field(init=False)
 
     def __post_init__(self):
+ 
+
         valid_relative_moves = piece_dict[self.type]["valid_relative_moves"]
         if self.type == "pawn":
             valid_relative_moves = valid_relative_moves[self.color]

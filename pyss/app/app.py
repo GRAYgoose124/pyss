@@ -17,13 +17,16 @@ class ChessApp(arcade.Window):
             self.width - self.board_size) // 2, (self.height - self.board_size) // 2
 
         self.play_board = None
+
+        self.turn = "white"
+
+        self.selected_piece = None
+        self.old_selected_piece = None
+
         self._board = None
         self._rotate = rotate
         self._selected_valid_moves = []
         self._depth_search = 0
-
-        self.selected_piece = None
-        self.old_selected_piece = None
 
     def setup(self):
         self.play_board = Chessboard()
@@ -153,12 +156,12 @@ class ChessApp(arcade.Window):
             i, j = self.get_tile(x, y)
             logger.debug(f"Clicked pos: {x, y} -> {i, j}")
 
-            made_move = False
             if self.selected_piece is not None:
-                made_move = self.make_valid_move_handler(i, j)
+                self.make_valid_move_handler(i, j)
 
             self.select_piece_handler(i, j)
 
+    # TODO: we could cache everything until a self.board._update ...
     def select_piece_handler(self, i, j):
         """Select a piece, or deselect if already selected."""
         if self.play_board[i, j]:
@@ -173,8 +176,7 @@ class ChessApp(arcade.Window):
                 self._selected_valid_moves = self.play_board.valid_moves_to_depth(
                     (i, j), depth=self._depth_search)
             else:
-                self._selected_valid_moves = self.play_board.valid_moves(
-                    (i, j))
+                self._selected_valid_moves = self.play_board.valid_moves((i, j))
 
             logger.debug(f"Valid moves: {self._selected_valid_moves}")
         else:
@@ -183,10 +185,11 @@ class ChessApp(arcade.Window):
 
     def make_valid_move_handler(self, i, j):
         """Make a valid move."""
-        if isinstance(self._selected_valid_moves[0], list):
+        if len(self._selected_valid_moves) and isinstance(self._selected_valid_moves[0], list):
             selected_valid_moves = self._selected_valid_moves[0]
         else:
             selected_valid_moves = self._selected_valid_moves
+
         if (i, j) in selected_valid_moves:
             self.play_board.move(self.selected_piece, (i, j))
             self.old_selected_piece = None
