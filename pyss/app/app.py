@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class ChessApp(arcade.Window):
-    def __init__(self, width=800, height=800, rotate=True):
+    def __init__(self, width=800, height=800):
         super().__init__(width, height, "PγssChεss")
 
         self.tile_size = min(width, height) // 8
@@ -29,11 +29,14 @@ class ChessApp(arcade.Window):
         self._selected_depth_moves = None
     
         self._board = None
-        self._rotate = rotate
+        self._rotate = True
   
         self._depth_search = 2
 
-    def setup(self):
+    def setup(self, rotate=True, depth=0):
+        self._rotate = rotate
+        self._depth_search = depth - 1 if depth else 0
+        
         self.play_board = Chessboard()
         self._create_board()
 
