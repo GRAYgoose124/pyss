@@ -1,5 +1,10 @@
+import logging
+
 from functools import lru_cache
 from .piece import piece_dict, Piece
+
+
+logger = logging.getLogger(__name__)
 
 
 class Chessboard:
@@ -54,26 +59,34 @@ class Chessboard:
         for real_position, piece in self.active_pieces.items():
             if piece == position:
                 del self.active_pieces[real_position]
-                break
-    
-    @lru_cache(maxsize=32)
-    def valid_moves(self, i, j):
-        """Returns a list of valid moves for a given piece"""
-        piece = self.board[i][j]
+                break 
+       
+    def valid_moves(self, position):
+        """Returns a list of valid moves for a piece. """
+        logger.debug(f"Getting valid moves for {self.board[position[0]][position[1]]} at {position}")
+
+        valid_moves = []
+        piece = self.board[position[0]][position[1]]
         if not piece:
             return []
-
-        moves = []
-        for move in piece.valid_moves(i, j):
-            if piece.type in ["bishop", "rook", "queen"]:
-                if self.check_path((i, j), move):
-                    moves.append(move)
-            elif self.board_valid_move((i, j), move):
-                moves.append(move)
-        return moves     
-       
+        
+        for move in piece.valid_relative_moves:
+            for displacement in range(1, piece.displacement + 1):
+                new_position = (position[0] + move[0] * displacement, position[1] + move[1] * displacement)
+                if self.board_valid_move(position, new_position):
+                    if piece.type in ["bishop", "rook", "queen"]:
+                        if self.check_path(position, new_position):
+                            valid_moves.append(new_position)
+                    elif piece.type == "pawn":
+                        pass
+                    else:
+                        valid_moves.append(new_position)
+        
+        logger.debug(f"Valid moves for {piece} at {position}: {valid_moves}")
+        return valid_moves
+        
     def board_valid_move(self, position, new_position):
-        """Checks if a move is valid"""
+        """Checks if a move is valid between two locations on the board."""
         # check if new position is in bounds
         if new_position[0] < 0 or new_position[0] > 7 or new_position[1] < 0 or new_position[1] > 7:
             return False
@@ -113,6 +126,8 @@ class Chessboard:
                 if seen_enemy:
                     return False
                 seen_enemy = True
+            elif seen_enemy:
+                return False
 
         return True
 

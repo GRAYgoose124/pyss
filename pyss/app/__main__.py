@@ -90,7 +90,7 @@ class ChessApp(arcade.Window):
 
         i, j = self.selected_piece
         if self.selected_piece != self.old_selected_piece:
-            self._selected_valid_moves = self.play_board.valid_moves(i, j)
+            self._selected_valid_moves = self.play_board.valid_moves((i, j))
             self.old_selected_piece = self.selected_piece
         
         if self._selected_valid_moves is None:
