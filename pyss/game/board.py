@@ -35,7 +35,7 @@ class Chessboard:
     def reset(self):
         """Resets the board to its initial state"""
         self._active_pieces = None
-        self.board = Chessboard.initialize_board(no_left_pawns=True)
+        self.board = Chessboard.initialize_board()
 
     @property
     def active_pieces(self):
@@ -78,10 +78,18 @@ class Chessboard:
                         if self.check_path(position, new_position):
                             valid_moves.append(new_position)
                     elif piece.type == "pawn":
-                        pass
+                        if not self.board[new_position[0]][new_position[1]]:
+                            valid_moves.append(new_position)
+                        for capture in piece.valid_captures:
+                            capture_position = (position[0] + capture[0], position[1] + capture[1])
+                            if self.board_valid_move(position, capture_position):
+                                p = self.get_piece_at(capture_position)
+                                if p and not piece.compare_color(p):
+                                    valid_moves.append(capture_position)
+                            
                     else:
                         valid_moves.append(new_position)
-        
+
         logger.debug(f"Valid moves for {piece} at {position}: {valid_moves}")
         return valid_moves
         
@@ -103,10 +111,6 @@ class Chessboard:
 
     def check_path(self, position, new_position):
         """ Returns true if there are no pieces in a straight line between two positions. """
-        # check if move is valid
-        if not self.board_valid_move(position, new_position):
-            return False
-
         # get the direction of the move
         direction = (new_position[0] - position[0], new_position[1] - position[1])
 
@@ -130,6 +134,10 @@ class Chessboard:
                 return False
 
         return True
+
+    def get_piece_at(self, position):
+        """Returns the piece at a given position"""
+        return self.board[position[0]][position[1]]
 
     def move(self, position, new_position):
         """ Unsafely moves a piece destroying any piece that is in the destionatoin. """

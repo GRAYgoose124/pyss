@@ -155,11 +155,10 @@ class ChessApp(arcade.Window):
         """Make a valid move."""
         if (i, j) in self._selected_valid_moves:
             self.play_board.move(self.selected_piece, (i, j))
-            self.selected_piece = None
             self.old_selected_piece = None
+            self.selected_piece = (i, j) # = None
             self._selected_valid_moves = []
             return True
-        
   
 
 def main():
