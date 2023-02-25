@@ -29,21 +29,22 @@ class Piece:
 
     color: COLORS
     type: TYPES
+
     notation: str = field(init=False)
     value: int = field(init=False)
     unicode: str = field(init=False)
     initial_positions: list[POSITION] = field(init=False)
-    valid_relative_moves: list[POSITION] = field(init=False)
-    valid_captures: list[POSITION] = field(init=False)
     displacement: int = field(init=False)
     value: int = field(init=False)
 
-    def __post_init__(self):
- 
+    # need to be transformed into real moves by multiply with displacement
+    valid_relative_moves: list[POSITION] = field(init=False)
 
+    def __post_init__(self):
         valid_relative_moves = piece_dict[self.type]["valid_relative_moves"]
         if self.type == "pawn":
             valid_relative_moves = valid_relative_moves[self.color]
+            # valid_captures is pawn only! TODO?
             valid_captures = piece_dict[self.type]["valid_captures"][self.color]
             self.valid_captures = valid_captures
 
@@ -70,6 +71,14 @@ class Piece:
     def compare_color(self, other):
         """Returns True if the colors of self and other are the same"""
         return self.color == other.color
+    
+    def compare(self, other):
+        """Return a dict of the different fields."""
+        diff = {}
+        for field in ["color", "type"]:
+            if getattr(self, field) != getattr(other, field):
+                diff[field] = getattr(other, field)
+        return diff
 
     def __str__(self):
         return self.notation.upper() if self.color == "white" else self.notation.lower()

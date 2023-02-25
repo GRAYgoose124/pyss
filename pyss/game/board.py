@@ -104,12 +104,12 @@ class Chessboard:
             all_valid_moves = []
 
         original_piece = self.get_piece_at(position)
-        if not original_piece or depth <= 0:
+        if not original_piece or depth < 0:
             return all_valid_moves
 
         # check valid moves for piece
         valid_moves = self.valid_moves(position)
-        all_valid_moves.append(valid_moves)
+        all_valid_moves.append((depth, valid_moves))
         for move in valid_moves:
             # simulate move
             move_piece = self.get_piece_at(move)
@@ -128,9 +128,6 @@ class Chessboard:
 
     def valid_moves(self, position=None):
         """Returns a list of valid moves for a piece. """
-        logger.debug(
-            f"Getting valid moves for {self.board[position[0]][position[1]]} at {position}")
-
         valid_moves = []
         piece = self.get_piece_at(position)
         if not piece:

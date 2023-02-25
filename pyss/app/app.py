@@ -1,6 +1,8 @@
 import arcade
 import logging
 
+from pyss.app.utils import DEPTH_COLOR_PALETTE
+
 from ..game.board import Chessboard
 
 
@@ -22,23 +24,37 @@ class ChessApp(arcade.Window):
 
         self.selected_piece = None
         self.old_selected_piece = None
-
+        self._selected_valid_moves = []
+        self._selected_depth_bins = None
+        self._selected_depth_moves = None
+    
         self._board = None
         self._rotate = rotate
-        self._selected_valid_moves = []
-        self._depth_search = 0
+  
+        self._depth_search = 2
 
     def setup(self):
         self.play_board = Chessboard()
-        self.create_board()
+        self._create_board()
 
+    def on_draw(self):
+        arcade.start_render()
+
+        self.board.draw()
+        self.draw_valid_moves()
+        self.draw_pieces()
+
+    def update(self, delta_time):
+        if delta_time < 1 / 60:
+            return
+        
     @property
     def board(self):
         if self._board is None:
-            self.create_board()
+            self._create_board()
         return self._board
 
-    def create_board(self):
+    def _create_board(self):
         board = arcade.ShapeElementList()
 
         def create_tile(color, i, j): return arcade.create_rectangle_filled(self.offset[0] + (i * self.tile_size + self.tile_size * 0.5),
@@ -56,7 +72,7 @@ class ChessApp(arcade.Window):
 
         self._board = board
 
-    def draw_piece(self, i, j):
+    def _draw_piece(self, i, j):
         # rotate visual i, j 90 degrees clockwise
         if not self._rotate:
             ix, jx = i, j
@@ -89,7 +105,7 @@ class ChessApp(arcade.Window):
                                                       self.offset[1] + (
                             jx * self.tile_size + self.tile_size * 0.5),
                             self.tile_size, self.tile_size, arcade.color.RED, 2)
-                    self.draw_piece(i, j)
+                    self._draw_piece(i, j)
 
     def _draw_valid_moves(self, valid_moves, color=arcade.color.GREEN, size=1):
         for move in valid_moves:
@@ -103,43 +119,43 @@ class ChessApp(arcade.Window):
             arcade.draw_circle_filled(self.offset[0] + (ix * self.tile_size + self.tile_size * 0.5),
                                       self.offset[1] + (jx * self.tile_size +
                                                         self.tile_size * 0.5),
-                                      self.tile_size // ((size * 2) + 2), color)
+                                      self.tile_size // ((size ** 1.5) + 2), color)
+
+    def _draw_valid_depth(self):
+        # filter out [] from self._selected_valid_moves
+        if self._selected_depth_bins is None:
+            valid_ms = [vms for vms in self._selected_depth_moves if vms[1]]
+            # collect moves by depth, each set of moves is (depth, valid_moves)
+            depth_bins = {}
+            for move in valid_ms:
+                depth = move[0]
+                if depth not in depth_bins:
+                    depth_bins[depth] = []
+                depth_bins[depth].extend(move[1])
+
+            if self._depth_search in depth_bins:
+                self._selected_valid_moves = depth_bins[self._depth_search]
+            else:
+                return
+            self._selected_depth_bins = depth_bins.items()
+         
+            
+        for i, valid_moves in self._selected_depth_bins:
+            color = DEPTH_COLOR_PALETTE[(self._depth_search-i) % len(DEPTH_COLOR_PALETTE)]
+            self._draw_valid_moves(valid_moves, color=color, size=(self._depth_search-i) + 1)
 
     def draw_valid_moves(self):
         """Show valid moves for selected piece."""
         if self.selected_piece is None:
             return
-
-        i, j = self.selected_piece
-
-        if self._selected_valid_moves is None or len(
-                self._selected_valid_moves) == 0:
+        
+        if self._selected_valid_moves is None and self._selected_depth_moves is None:
             return
 
         if self._depth_search > 0:
-            for i, valid_moves in enumerate(self._selected_valid_moves):
-                # color from depth
-                if i == 0:
-                    color = arcade.color.GREEN
-                elif i == 1:
-                    color = arcade.color.YELLOW
-                elif i == 2:
-                    color = arcade.color.RED
-
-                self._draw_valid_moves(valid_moves, color=color, size=i + 1)
+            self._draw_valid_depth()
         else:
             self._draw_valid_moves(self._selected_valid_moves)
-
-    def on_draw(self):
-        arcade.start_render()
-
-        self.board.draw()
-        self.draw_valid_moves()
-        self.draw_pieces()
-
-    def update(self, delta_time):
-        if delta_time < 1 / 60:
-            return
 
     def get_tile(self, x, y):
         """Get the tile at the given position, handling rotation."""
@@ -161,32 +177,37 @@ class ChessApp(arcade.Window):
 
             self.select_piece_handler(i, j)
 
-    # TODO: we could cache everything until a self.board._update ...
+    def reset_selection(self):
+        self.selected_piece = None
+        self._selected_depth_bins = None
+        self._selected_depth_moves = None
+        self._selected_depth_moves = []
+
+    # TODO: we could cache everything until a self.play_board._update ...
     def select_piece_handler(self, i, j):
         """Select a piece, or deselect if already selected."""
         if self.play_board[i, j]:
             # toggle selection
             if self.selected_piece == (i, j):
-                self.selected_piece = None
+                self.reset_selection()
             else:
+                self.reset_selection()
                 self.selected_piece = i, j
 
             # get valid moves
             if self._depth_search:
-                self._selected_valid_moves = self.play_board.valid_moves_to_depth(
+                self._selected_depth_moves = self.play_board.valid_moves_to_depth(
                     (i, j), depth=self._depth_search)
             else:
                 self._selected_valid_moves = self.play_board.valid_moves((i, j))
-
-            logger.debug(f"Valid moves: {self._selected_valid_moves}")
         else:
-            self.selected_piece = None
-            self._selected_valid_moves = []
+            self.reset_selection()
+
 
     def make_valid_move_handler(self, i, j):
         """Make a valid move."""
         if len(self._selected_valid_moves) and isinstance(self._selected_valid_moves[0], list):
-            selected_valid_moves = self._selected_valid_moves[0]
+            selected_valid_moves = self._selected_valid_moves[0][1]
         else:
             selected_valid_moves = self._selected_valid_moves
 
