@@ -2,10 +2,12 @@ import pytest
 
 from pyss.game.notation import generate_notation, parse_notation
 
+
 class TestSuite:
     @pytest.mark.skip
     def test_notation(self):
-        # based on: http://www.chesscorner.com/tutorial/basic/notation/notate.htm
+        # based on:
+        # http://www.chesscorner.com/tutorial/basic/notation/notate.htm
         game_notes = "1.f2-f4\te7-e5\n2.f4xe5\td7-d6\n3.e5xd6\tBf8xd6\n4.g2-g3\tQd8-g5\n5.Ng1-f3\tQg5xg3+\n6.h2xg3\tBd6xg3#"
         expected = [
             "1. f2 pawn moves to f4, e7 pawn moves to e5",
@@ -15,7 +17,7 @@ class TestSuite:
             "5. g1 knight moves to f3, g5 queen captures g3",
             "6. h2 pawn captures g3, d6 bishop captures g3",
             " ... checkmate"]
-        
+
         print(parse_notation(game_notes))
 
     def test_generate_notation(self):
@@ -25,23 +27,28 @@ class TestSuite:
         # e7-e5
         assert generate_notation("pawn", "", (6, 4), (4, 4)) == "e7-e5"
         # f4xe5
-        assert generate_notation("pawn", "", (3, 5), (4, 4), capture=True) == "f4xe5"
+        assert generate_notation(
+            "pawn", "", (3, 5), (4, 4), capture=True) == "f4xe5"
         # d7-d6
         assert generate_notation("pawn", "", (6, 3), (5, 3)) == "d7-d6"
         # e5xd6
-        assert generate_notation("pawn", "", (4, 4), (5, 3), capture=True) == "e5xd6"
+        assert generate_notation(
+            "pawn", "", (4, 4), (5, 3), capture=True) == "e5xd6"
         # Bf8xd6
-        assert generate_notation("bishop", "B", (7, 5), (5, 3), capture=True) == "Bf8xd6"
+        assert generate_notation(
+            "bishop", "B", (7, 5), (5, 3), capture=True) == "Bf8xd6"
         # g2-g3
         assert generate_notation("pawn", "", (1, 6), (2, 6)) == "g2-g3"
         # Qd8-g5
         assert generate_notation("queen", "Q", (7, 3), (4, 6)) == "Qd8-g5"
         # Ng1-f3
-        assert generate_notation("knight", "N", (0, 6),  (2, 5)) == "Ng1-f3"
+        assert generate_notation("knight", "N", (0, 6), (2, 5)) == "Ng1-f3"
         # Qg5xg3+
-        assert generate_notation("queen", "Q", (4, 6), (2, 6), capture=True, check=True) == "Qg5xg3+"
+        assert generate_notation(
+            "queen", "Q", (4, 6), (2, 6), capture=True, check=True) == "Qg5xg3+"
         # h2xg3
-        assert generate_notation("pawn", "h", (1, 7), (2, 6), capture=True) == "h2xg3"
+        assert generate_notation(
+            "pawn", "h", (1, 7), (2, 6), capture=True) == "h2xg3"
         # Bd6xg3#
-        assert generate_notation("bishop", "B", (5, 3), (2, 6), capture=True, checkmate=True) == "Bd6xg3#"
-
+        assert generate_notation(
+            "bishop", "B", (5, 3), (2, 6), capture=True, checkmate=True) == "Bd6xg3#"

@@ -1,5 +1,5 @@
 
-    
+
 def get_file(position):
     """Returns the file of a given position"""
     return chr(ord('a') + position[1])
@@ -53,12 +53,13 @@ def move_piece_notation(piece_note, position, move, capture=False):
     return f"{piece_note}{'x' if capture else ''}{position_to_notation(position)}-{position_to_notation(move)}"
 
 
-def generate_notation(piece_type, piece_note, position, new_position=None, capture=False, check=False, checkmate=False):
+def generate_notation(piece_type, piece_note, position,
+                      new_position=None, capture=False, check=False, checkmate=False):
     """Returns the notation of the piece at a given position"""
     position = position_to_notation(position)
     if new_position:
         new_position = position_to_notation(new_position)
-        
+
     if piece_type == "pawn":
         notation = f"{position}{'x' if capture else '-'}{new_position}"
     else:
@@ -66,12 +67,12 @@ def generate_notation(piece_type, piece_note, position, new_position=None, captu
             notation = f"{piece_note}{position}"
         else:
             notation = f"{piece_note}{position}{'x' if capture else '-'}{new_position}"
-    
+
     if checkmate:
         notation += "#"
     elif check:
         notation += "+"
-    
+
     return notation
 
 

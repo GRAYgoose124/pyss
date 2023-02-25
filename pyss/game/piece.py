@@ -8,10 +8,11 @@ from typing import Literal
 logger = logging.getLogger(__name__)
 
 
-# piece_dict[piece_type] contains the notation and both unicode characters for each piece
+# piece_dict[piece_type] contains the notation and both unicode characters
+# for each piece
 piece_dict = {
     "pawn": {
-        "notation": "",
+        "notation": "p",
         "unicode": {
             "white": "♙",
             "black": "♟"
@@ -33,7 +34,7 @@ piece_dict = {
     },
     "rook": {
         "notation": "R",
-        "unicode": {    
+        "unicode": {
             "white": "♖",
             "black": "♜"
         },
@@ -97,7 +98,7 @@ piece_dict = {
             "white": [(7, 4)],
             "black": [(0, 4)]
         },
-        "valid_relative_moves":[(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)],
+        "valid_relative_moves": [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)],
         "displacement": 1,
         "value": 0
     }
@@ -129,11 +130,11 @@ class Piece:
             valid_captures = piece_dict[self.type]["valid_captures"][self.color]
             self.valid_captures = valid_captures
 
-
         logger.debug(f"Piece.__post_init__(): {self.color} {self.type}\n"
                      f"\tvalid_relative_moves: {valid_relative_moves}\n")
-        
-        # Set the notation, unicode, initial_positions, valid_relative_moves, valid_relative_captures, displacement, and value
+
+        # Set the notation, unicode, initial_positions, valid_relative_moves,
+        # valid_relative_captures, displacement, and value
         self.notation = piece_dict[self.type]["notation"]
         self.unicode = piece_dict[self.type]["unicode"][self.color]
         self.initial_positions = piece_dict[self.type]["initial_positions"][self.color]
@@ -146,14 +147,15 @@ class Piece:
     @staticmethod
     def random_piece():
         """Returns a random piece"""
-        return Piece(choice(Piece.COLORS.__args__), choice(Piece.TYPES.__args__))
-    
+        return Piece(choice(Piece.COLORS.__args__),
+                     choice(Piece.TYPES.__args__))
+
     def compare_color(self, other):
         """Returns True if the colors of self and other are the same"""
         return self.color == other.color
 
     def __str__(self):
         return self.notation.upper() if self.color == "white" else self.notation.lower()
-    
+
     def __hash__(self) -> int:
         return id(self)

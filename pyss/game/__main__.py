@@ -8,5 +8,8 @@ class ChessGame:
         self.board = board or Chessboard()
         self.turn: Literal["white", "black"] = "white"
 
+    def is_move_valid(self, move):
+        pass
+
     def make_move(self, move):
         pass
