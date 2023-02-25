@@ -1,0 +1,2 @@
+- Something about depth drawing is breaking on the board edges
+  - Notably the knight cannot take on top edge and a pawn that reaches the top edge suicides. (Presumably this is 7 and it's a boundary issue.)

@@ -29,7 +29,7 @@ class Chessboard:
                          no_queens=False,
                          one_each=False,
                          interlace_pawns=False
-                    ):
+                         ):
         """Initializes the board with the starting positions of the pieces."""
         board = [[None for _ in range(8)] for _ in range(8)]
 
@@ -194,10 +194,10 @@ class Chessboard:
         for i in range(distance):
             # get the position of the next space in the path
             next_position = (position[0] +
-                             (i + 1) * direction[0] // distance, 
+                             (i + 1) * direction[0] // distance,
                              position[1] +
                              (i + 1) * direction[1] // distance)
-            
+
             # check if the space is occupied by a friendly piece
             next_piece = self.get_piece_at(next_position)
             moving_piece = self.get_piece_at(position)

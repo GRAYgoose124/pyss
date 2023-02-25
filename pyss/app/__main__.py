@@ -9,7 +9,7 @@ def argparser():
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--depth", type=int, default=0,
                         help="Visual depth")
-    
+
     return parser
 
 

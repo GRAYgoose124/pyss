@@ -71,7 +71,7 @@ class Piece:
     def compare_color(self, other):
         """Returns True if the colors of self and other are the same"""
         return self.color == other.color
-    
+
     def compare(self, other):
         """Return a dict of the different fields."""
         diff = {}
