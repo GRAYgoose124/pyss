@@ -18,18 +18,53 @@ class Chessboard:
         self.reset()
 
     @staticmethod
-    def initialize_board(no_pawns=False, no_left_pawns=False):
+    def initialize_board(no_pawns=False, 
+                        no_left_pawns=False, 
+                        no_right_pawns=False,
+                        no_knights=False,
+                        no_rooks=False,
+                        no_bishops=False,
+                        no_queens=False,
+                        one_each=False,
+                        interlace_pawns=False
+    ):
+        """Initializes the board with the starting positions of the pieces."""
         board = [[None for _ in range(8)] for _ in range(8)]
-        """Initializes the board with the starting positions of the pieces"""
+
         for piece in piece_dict:
             if no_pawns and piece == "pawn":
                 continue
+            already_placed = []
             for color in piece_dict[piece]["initial_positions"]:
                 for position in piece_dict[piece]["initial_positions"][color]:
                     if no_left_pawns and piece == "pawn":
                         if position[1] < 4:
                             continue
+                    if no_right_pawns and piece == "pawn":
+                        if position[1] > 3:
+                            continue
+
+                    if no_knights and piece == "knight":
+                        continue
+                    if no_rooks and piece == "rook":
+                        continue
+                    if no_bishops and piece == "bishop":
+                        continue
+                    if no_queens and piece == "queen":
+                        continue
+
+                    if one_each and piece != "pawn":
+                        if position in already_placed:
+                            continue
+                        else:
+                            already_placed.append(position)
+
+                    if interlace_pawns and piece == "pawn":
+                        if position[1] % 2 == 0:
+                            continue
+
                     board[position[0]][position[1]] = Piece(color, piece)
+                    
         return board
     
     def reset(self):
