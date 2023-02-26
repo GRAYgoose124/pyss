@@ -54,6 +54,7 @@ class ChessApp(arcade.Window):
         self.__draw_pieces()
         self.__draw_valid_moves()
         self.__draw_stats()
+        self.__draw_rank_and_file()
 
     def update(self, delta_time):
         if delta_time < 1 / 60:
@@ -113,6 +114,14 @@ class ChessApp(arcade.Window):
                 board.append(tile)
 
         return board
+    
+    def __draw_rank_and_file(self):
+        """Draws the rank and file of the board."""
+        for i in range(8):
+            arcade.draw_text(str(i + 1), self.offset[0] - 20, self.offset[1] + (i * self.tile_size + self.tile_size * .5),
+                             arcade.color.YELLOW, font_size=14, anchor_x="center", anchor_y="center")
+            arcade.draw_text(str(i + 1), self.offset[0] + (i * self.tile_size + self.tile_size * .5), self.offset[1] - 20,
+                             arcade.color.YELLOW, font_size=14, anchor_x="center", anchor_y="center")
 
     def __draw_stats(self):
         """Draws the stats of the game."""

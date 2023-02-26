@@ -163,7 +163,7 @@ class Chessboard:
                     other_piece = self.get_piece_at(other_pos)
                     if other_piece and not other_piece.has_moved:
                         # check if path is clear
-                        if self.check_path(position, other_pos):
+                        if self.check_path(position, other_pos, castling=True):
                             valid_moves.append(other_pos)
 
         for move in piece.valid_relative_moves:
@@ -218,7 +218,7 @@ class Chessboard:
 
         return True
 
-    def check_path(self, position, new_position):
+    def check_path(self, position, new_position, castling=False):
         """ Returns true if there are no pieces in a straight line between two positions. """
         # get the direction of the move
         direction = (
@@ -229,10 +229,11 @@ class Chessboard:
 
         # get the number of spaces between the two positions
         distance = max(abs(direction[0]), abs(direction[1]))
+        # TODO: Hack so that castling doesn't ignore rooks/kings
 
         # check if the path is clear
         seen_enemy = False
-        for i in range(distance-1):
+        for i in range(distance):
             # get the position of the next space in the path
             next_position = (position[0] +
                              (i + 1) * direction[0] // distance,
@@ -242,8 +243,8 @@ class Chessboard:
             # check if the space is occupied by a friendly piece
             next_piece = self.get_piece_at(next_position)
             moving_piece = self.get_piece_at(position)
-            if next_piece and moving_piece and next_piece.compare_color(
-                    moving_piece):
+            if next_piece and moving_piece and next_piece.compare_color(moving_piece) and\
+                next_piece.type not in ["king", "rook"] and not castling:
                 return False
             # if it's an enemy piece, check if we've already seen one or set
             # that we have
