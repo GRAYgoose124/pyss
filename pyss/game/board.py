@@ -90,6 +90,7 @@ class Chessboard:
     def update(self):
         """Updates the board"""
         logger.debug("Updating board...")
+        self._updated = True
         self.update_active_pieces()
 
     def update_active_pieces(self):
@@ -278,14 +279,18 @@ class Chessboard:
         """Returns the piece at a given position"""
         return self.board[position[0]][position[1]]
 
-    def move(self, position, new_position):
-        """ Unsafely moves a piece destroying any piece that is in the destionatoin. """
+    def move(self, position, new_position, update=False):
+        """ Semi-unsafely moves a piece destroying any piece that is in the destination.
+            This expects that the move is valid under chess rules. 
+        """
         piece = self.get_piece_at(position)
         other = self.get_piece_at(new_position)
 
+        # lets quit before we do anything if there's no piece to move
         if not piece:
             return
 
+        # check if the move is a castle, this presumes that it's a valid castle. (semi-unsafe)
         if piece.type in ["king", "rook"]:
             if other and other.type in ["king", "rook"] and other.type != piece.type:
                 self.remove_piece(new_position)
@@ -317,18 +322,19 @@ class Chessboard:
                 self.add_piece(other, other_position)
                 self.add_piece(piece, piece_position)
                 return
-
-        # if king, you cannot take
+            
+        # if king, you cannot take, only check and checkmate
         if other and other.type == "king":
             return
 
+        # reset en passant state if not pawn moving. 
+        # This is partially destructive and part of why this is a semi-unsafe move.
         if piece.type != "pawn" and self.en_passant_available:
             self.en_passant_available = False
 
         if piece.type == "pawn":
             # TODO: check for promotions
-            # En Passant
-            # check if pawn is moving two spaces from initial position
+            # Jump + En Passant
             if abs(new_position[0] - position[0]) == 2 and position in piece.initial_positions:
                 self.en_passant_available = new_position
             else:
@@ -342,14 +348,13 @@ class Chessboard:
                                     "white" else self.en_passant_available[0] + 1, new_position[1])
                 self.en_passant_available = False
         else:
-            # TODO: check for castling
             if self.board[new_position[0]][new_position[1]]:
                 self.remove_piece(new_position)
 
         piece.has_moved = True
         self.board[new_position[0]][new_position[1]] = piece
         self.board[position[0]][position[1]] = None
-        self._updated = True
+        self.update()
 
     # define index access to board
     def __getitem__(self, key):

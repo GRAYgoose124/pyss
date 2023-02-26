@@ -38,6 +38,7 @@ class ChessApp(arcade.Window):
         # game
         self.play_board = Chessboard(initialize=False)
         self._turns_enabled = True
+        self._turn_count = 0
         self.turn = "white"
 
         self._score_updated = False
@@ -47,6 +48,7 @@ class ChessApp(arcade.Window):
         self._rotate = rotate
         self._depth_search = depth - 1 if depth else 0
         self._turns_enabled = enable_turns
+        self._turn_count = 0
 
         self.play_board.reset(**board_config) # no_queens=True, no_knights=True, no_bishops=True)
 
@@ -314,11 +316,6 @@ class ChessApp(arcade.Window):
                 self._selected_piece = i, j
 
             if self._depth_search:
-                try:
-                    self.__prepare_depth_map()
-                except TypeError:
-                    pass
-
                 if self._selected_depth_moves is None:
                     self._selected_depth_moves = self.play_board.valid_moves_to_depth(
                         self._selected_piece, depth=self._depth_search)
@@ -330,6 +327,7 @@ class ChessApp(arcade.Window):
 
     def __make_valid_move_handler(self, i, j):
         """Make a valid move."""
+        # check if any valid moves are ready
         if self._selected_valid_moves is not None and len(
                 self._selected_valid_moves) and isinstance(self._selected_valid_moves[0], list):
             selected_valid_moves = self._selected_valid_moves[0][1]
@@ -338,18 +336,20 @@ class ChessApp(arcade.Window):
         else:
             return False
 
+        # if the attempted click is a valid move, try to make it
         if (i, j) in selected_valid_moves:
             other = self.play_board.get_piece_at((i, j))
             # king check is a hack because for some reason selecting it swaps the turn - probably because you can't capture it
-            if (i, j) != self._selected_piece and(other and other.type != "king") or not other:
-                self.play_board.move(self._selected_piece, (i, j))
+            if other and other.type == "king" and other.color != self.turn:
+                return False
+            if (i, j) != self._selected_piece:
+                self.play_board.move(self._selected_piece, (i, j), update=True)
                 # self._update_depth_bins([self.selected_piece, (i, j)])
                 self._reset_depth_bins()  # TODO: rebuild instead
 
+                # next turn
                 if self._turns_enabled:
+                    self._turn_count += 1
                     self.turn = "black" if self.turn == "white" else "white"
-
-                # update board
-                self.play_board.update()
 
                 return True
