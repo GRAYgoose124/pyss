@@ -16,8 +16,8 @@ class Chessboard:
         - 2 players
     """
 
-    def __init__(self):
-        self.reset()
+    def __init__(self, initialize=True):
+        self.reset(initialize=initialize)
 
     @staticmethod
     def initialize_board(no_pawns=False,
@@ -28,51 +28,53 @@ class Chessboard:
                          no_bishops=False,
                          no_queens=False,
                          one_each=False,
-                         interlace_pawns=False
+                         interlace_pawns=False,
+                         no_initial_pieces=False
                          ):
         """Initializes the board with the starting positions of the pieces."""
         board = [[None for _ in range(8)] for _ in range(8)]
 
-        for ty in piece_dict:
-            if no_pawns and ty == "pawn":
-                continue
-            already_placed = []
-            for color in piece_dict[ty]["initial_positions"]:
-                for position in piece_dict[ty]["initial_positions"][color]:
-                    if no_left_pawns and ty == "pawn":
-                        if position[1] < 4:
-                            continue
-                    if no_right_pawns and ty == "pawn":
-                        if position[1] > 3:
-                            continue
+        if not no_initial_pieces:
+            for ty in piece_dict:
+                if no_pawns and ty == "pawn":
+                    continue
+                already_placed = []
+                for color in piece_dict[ty]["initial_positions"]:
+                    for position in piece_dict[ty]["initial_positions"][color]:
+                        if no_left_pawns and ty == "pawn":
+                            if position[1] < 4:
+                                continue
+                        if no_right_pawns and ty == "pawn":
+                            if position[1] > 3:
+                                continue
 
-                    if no_knights and ty == "knight":
-                        continue
-                    if no_rooks and ty == "rook":
-                        continue
-                    if no_bishops and ty == "bishop":
-                        continue
-                    if no_queens and ty == "queen":
-                        continue
-
-                    if one_each and ty != "pawn":
-                        if position in already_placed:
+                        if no_knights and ty == "knight":
                             continue
-                        else:
-                            already_placed.append(position)
-
-                    if interlace_pawns and ty == "pawn":
-                        if position[1] % 2 == 0:
+                        if no_rooks and ty == "rook":
+                            continue
+                        if no_bishops and ty == "bishop":
+                            continue
+                        if no_queens and ty == "queen":
                             continue
 
-                    board[position[0]][position[1]] = Piece(color, ty)
+                        if one_each and ty != "pawn":
+                            if position in already_placed:
+                                continue
+                            else:
+                                already_placed.append(position)
+
+                        if interlace_pawns and ty == "pawn":
+                            if position[1] % 2 == 0:
+                                continue
+
+                        board[position[0]][position[1]] = Piece(color, ty)
 
         return board
 
-    def reset(self):
+    def reset(self, initialize=True):
         """Resets the board to its initial state"""
         self._active_pieces = None
-        self.board = Chessboard.initialize_board()
+        self.board = Chessboard.initialize_board(no_initial_pieces=not initialize)
 
     @property
     def active_pieces(self):

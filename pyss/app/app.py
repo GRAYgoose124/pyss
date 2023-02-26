@@ -18,12 +18,12 @@ class ChessApp(arcade.Window):
         self.offset = (
             self.width - self.board_size) // 2, (self.height - self.board_size) // 2
 
-        self.play_board = None
+        self.play_board = Chessboard(initialize=False)
 
         self.turn = "white"
 
-        self.selected_piece = None
-        self.old_selected_piece = None
+        self._selected_piece = None
+        self._old_selected_piece = None
         self._selected_valid_moves = []
         self._depth_bins = {}
         self._depth_drawlists = {}
@@ -31,7 +31,7 @@ class ChessApp(arcade.Window):
         self._selected_depth_moves = None
         self._selected_moves_list = None
 
-        self._board = None
+        self._display_board = self._create_board()
         self._rotate = True
 
         self._depth_search = 2
@@ -40,13 +40,12 @@ class ChessApp(arcade.Window):
         self._rotate = rotate
         self._depth_search = depth - 1 if depth else 0
 
-        self.play_board = Chessboard()
-        self._create_board()
+        self.play_board.reset()
 
     def on_draw(self):
         arcade.start_render()
 
-        self.board.draw()
+        self._display_board.draw()
         self.draw_valid_moves()
         self.draw_pieces()
 
@@ -55,12 +54,6 @@ class ChessApp(arcade.Window):
             return
 
     # access
-    @property
-    def board(self):
-        if self._board is None:
-            self._create_board()
-        return self._board
-
     def get_tile(self, x, y):
         """Get the tile at the given position, handling rotation."""
         i = (x - self.offset[0]) // self.tile_size
@@ -71,8 +64,8 @@ class ChessApp(arcade.Window):
         return i, j
 
     def reset_selection(self):
-        self.selected_piece = None
-        self.old_selected_piece = None
+        self._selected_piece = None
+        self._old_selected_piece = None
         self._selected_depth_bins = None
         self._selected_depth_moves = None
         self._selected_moves_list = None
@@ -100,7 +93,7 @@ class ChessApp(arcade.Window):
 
                 board.append(tile)
 
-        self._board = board
+        return board
 
     def _draw_piece(self, i, j):
         # rotate visual i, j 90 degrees clockwise
@@ -125,7 +118,7 @@ class ChessApp(arcade.Window):
         for i in range(8):
             for j in range(8):
                 if self.play_board[i, j]:
-                    if self.selected_piece == (i, j):
+                    if self._selected_piece == (i, j):
                         if self._rotate:
                             ix, jx = j, i
                         else:
@@ -162,7 +155,7 @@ class ChessApp(arcade.Window):
     
     def draw_valid_moves(self):
         """Show valid moves for selected piece."""
-        if self.selected_piece is None:
+        if self._selected_piece is None:
             return
 
         if self._selected_valid_moves is None and self._selected_depth_moves is None:
@@ -170,10 +163,10 @@ class ChessApp(arcade.Window):
 
         if self._depth_search > 0:
             self._prepare_depth_map()
-            if self.selected_piece not in self._depth_drawlists:
+            if self._selected_piece not in self._depth_drawlists:
                 self._create_depth_map()
 
-            self._depth_drawlists[self.selected_piece].draw()
+            self._depth_drawlists[self._selected_piece].draw()
         else:
             if self._selected_moves_list is None:
                 self._selected_moves_list = self._create_moves_list(
@@ -197,8 +190,8 @@ class ChessApp(arcade.Window):
         """
         # first use cached depth bins
         if self._selected_depth_bins is None:
-            if self._depth_bins is not None and self.selected_piece in self._depth_bins:
-                self._selected_depth_bins = self._depth_bins[self.selected_piece]
+            if self._depth_bins is not None and self._selected_piece in self._depth_bins:
+                self._selected_depth_bins = self._depth_bins[self._selected_piece]
                 # get min key in self._selected_depth_bins
                 # TODO: ISSUE / Theoretically losing the depth at the edge is part of the cause
                 # for the top edge failure.
@@ -222,8 +215,8 @@ class ChessApp(arcade.Window):
             if self._selected_valid_moves is not None:
                 self._selected_valid_moves = None
             # force rebuild drawlists
-            if self.selected_piece in self._depth_drawlists:
-                del(self._depth_drawlists[self.selected_piece])
+            if self._selected_piece in self._depth_drawlists:
+                del(self._depth_drawlists[self._selected_piece])
 
             self._selected_depth_bins = depth_bins
 
@@ -241,7 +234,7 @@ class ChessApp(arcade.Window):
                 self._selected_valid_moves = self._selected_depth_bins[depth]
 
     def _create_depth_map(self):
-        self._depth_drawlists[self.selected_piece] = arcade.ShapeElementList()
+        self._depth_drawlists[self._selected_piece] = arcade.ShapeElementList()
     
         depth_drawlists = []
         for i, valid_moves in self._selected_depth_bins.items():
@@ -253,7 +246,7 @@ class ChessApp(arcade.Window):
             depth_drawlists.extend(drawlist)
 
         for s in depth_drawlists:
-            self._depth_drawlists[self.selected_piece].append(s)
+            self._depth_drawlists[self._selected_piece].append(s)
 
     # GUI interactivity
     def on_mouse_press(self, x, y, button, modifiers):
@@ -261,7 +254,7 @@ class ChessApp(arcade.Window):
             i, j = self.get_tile(x, y)
             logger.debug(f"Clicked pos: {x, y} -> {i, j}")
 
-            if self.selected_piece is not None:
+            if self._selected_piece is not None:
                 self.make_valid_move_handler(i, j)
 
             self.select_piece_handler(i, j)
@@ -269,25 +262,31 @@ class ChessApp(arcade.Window):
     # TODO: we could cache everything until a self.play_board._update ...
     def select_piece_handler(self, i, j):
         """Select a piece, or deselect if already selected."""
-        if self.play_board[i, j]:
+        selection = self.play_board[i, j]
+
+        if selection and selection.color != self.turn:
+             self.reset_selection()
+             return
+
+        if selection:
           # toggle selection
-            if self.selected_piece == (i, j):
+            if self._selected_piece == (i, j):
                 if self._depth_search and (i, j) not in self._depth_bins:
                     self._depth_bins[(i, j)] = self._selected_depth_bins
                 self.reset_selection()
                 return
             else:
-                if self._depth_search and self.selected_piece not in self._depth_bins:
-                    self._depth_bins[self.selected_piece] = self._selected_depth_bins
+                if self._depth_search and self._selected_piece not in self._depth_bins:
+                    self._depth_bins[self._selected_piece] = self._selected_depth_bins
                 self.reset_selection()
-                self.selected_piece = i, j
+                self._selected_piece = i, j
 
             if self._depth_search:
                 self._selected_depth_moves = self.play_board.valid_moves_to_depth(
-                    self.selected_piece, depth=self._depth_search)
+                    self._selected_piece, depth=self._depth_search)
             else:
                 self._selected_valid_moves = self.play_board.valid_moves(
-                    self.selected_piece)
+                    self._selected_piece)
         else:
             self.reset_selection()
 
@@ -302,8 +301,9 @@ class ChessApp(arcade.Window):
             return False
 
         if (i, j) in selected_valid_moves:
-            if (i, j) != self.selected_piece:
-                self.play_board.move(self.selected_piece, (i, j))
+            if (i, j) != self._selected_piece:
+                self.play_board.move(self._selected_piece, (i, j))
                 # self._update_depth_bins([self.selected_piece, (i, j)])
                 self.reset_depth_bins() # TODO: rebuild instead
+                self.turn = "black" if self.turn == "white" else "white"
                 return True
