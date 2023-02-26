@@ -9,8 +9,10 @@ def argparser():
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--depth", type=int, default=2,
                         help="Visual depth")
-    parser.add_argument("-nt", "--disable-turns", action="store_true", default=False,
+    parser.add_argument("-dt", "--disable-turns", action="store_true", default=False,
                         help="Disable turns")
+    parser.add_argument("-ds", "--disable-stats", action="store_true", default=False,
+                        help="Disable stats")
 
     # subparser to set board config with flags
     board_cfg_parser = parser.add_argument_group("Board Config")
@@ -47,7 +49,7 @@ def main():
             default_board_cfg[arg] = getattr(args, arg)
 
     app = ChessApp()
-    app.setup(depth=args.depth, enable_turns=not args.disable_turns,
+    app.setup(depth=args.depth, stat_draw=not args.disable_stats, enable_turns=not args.disable_turns,
               board_config=default_board_cfg)
 
     arcade.run()

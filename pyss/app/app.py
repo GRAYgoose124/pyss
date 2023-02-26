@@ -1,3 +1,4 @@
+import os
 import arcade
 import logging
 
@@ -24,11 +25,17 @@ class ChessApp(arcade.Window):
         self._invert = True
         self._depth_search = 2
 
-        # selection
+        self._enable_stat_draw = True
+
+            # textures
+        root = os.path.dirname(os.path.realpath(__file__))
+        self._black_placeholder_texture = arcade.load_texture(os.path.join(root, "assets/black.png"))
+
+            # selection
         self._selected_piece = None
         self._old_selected_piece = None
         self._selected_valid_moves = []
-        # depth selection
+                # depth selection
         self._depth_bins = {}
         self._depth_drawlists = {}
         self._selected_depth_bins = None
@@ -44,10 +51,11 @@ class ChessApp(arcade.Window):
         self._score_updated = False
         self._score_updated_on = None
 
-    def setup(self, rotate=True, depth=0, enable_turns=True, board_config={"no_initial_pieces":False}):
+    def setup(self, rotate=True, depth=0, enable_turns=True, stat_draw=True, board_config={"no_initial_pieces":False}):
         self._rotate = rotate
         self._depth_search = depth - 1 if depth else 0
         self._turns_enabled = enable_turns
+        self._enable_stat_draw = stat_draw
         self._turn_count = 0
 
         self.play_board.reset(**board_config) # no_queens=True, no_knights=True, no_bishops=True)
@@ -58,7 +66,10 @@ class ChessApp(arcade.Window):
         self._display_board.draw()
         self.__draw_pieces()
         self.__draw_valid_moves()
-        self.__draw_stats()
+
+        if self._enable_stat_draw:
+            self.__draw_stats()
+
         self.__draw_rank_and_file()
 
     def update(self, delta_time):
@@ -131,18 +142,45 @@ class ChessApp(arcade.Window):
     def __draw_stats(self):
         """Draws the stats of the game."""
         FONT_SIZE = 8
-        if self._turns_enabled:
-            arcade.draw_text(f"Turn: {self.turn}", 10, 10, arcade.color.RED, FONT_SIZE)
+        FONT_COLOR = arcade.color.RED
 
+        # stats is middle right of the screen
+        stats_offset = self.width - 100, self.height // 2
+        box_size = (175, 375)
+
+        # draw placeholder texture as 100x300 transparent box at the offset
+        arcade.draw_texture_rectangle(*stats_offset, *box_size, self._black_placeholder_texture, alpha=128)
+
+        if self._turns_enabled:
+            # draw at top of stat box which is centered on stats_offset
+            text_offset = stats_offset[0] - box_size[0] // 4, stats_offset[1] + box_size[1] // 2 - 10
+            arcade.draw_text(f"Turn {self._turn_count}: {self.turn}", *text_offset, FONT_COLOR, FONT_SIZE, width=100, align="center",
+                             anchor_x="center", anchor_y="center", font_name=("Lucida Console",))
+
+        # update score if turn has changed
         if self.turn != self._score_updated_on:
             self._score_updated = sum([p.value for p in self.play_board._by_color["white"]]) - sum([p.value for p in self.play_board._by_color["black"]])
             self._score_updated_on = self.turn
 
-        arcade.draw_text(f"Score: {self._score_updated}", 10, 30, arcade.color.RED, FONT_SIZE)
+        # draw score
+        score_offset = stats_offset[0] - box_size[0] // 4, stats_offset[1] - box_size[1] // 2 + 10
+        arcade.draw_text(f"Score: {self._score_updated}", *score_offset, FONT_COLOR, FONT_SIZE, width=100, align="center",
+                            anchor_x="center", anchor_y="center", font_name=("Lucida Console",))
 
         # active pieces count
-        arcade.draw_text(f"White: {len(self.play_board._by_color['white'])}", 10, 50, arcade.color.RED, FONT_SIZE)
-        arcade.draw_text(f"Black: {len(self.play_board._by_color['black'])}", 10, 70, arcade.color.RED, FONT_SIZE)
+        # arcade.draw_text(f"White: {len(self.play_board._by_color['white'])}", 10, 50, FONT_COLOR, FONT_SIZE)
+        # arcade.draw_text(f"Black: {len(self.play_board._by_color['black'])}", 10, 70, FONT_COLOR, FONT_SIZE)
+        # active piece count 
+        active_piece_offset = stats_offset[0] - box_size[0] // 4, stats_offset[1] - box_size[1] // 2 + 30
+        arcade.draw_text(f"White: {len(self.play_board._by_color['white'])}", *active_piece_offset, FONT_COLOR, FONT_SIZE)
+        arcade.draw_text(f"Black: {len(self.play_board._by_color['black'])}", active_piece_offset[0], active_piece_offset[1] + 20, FONT_COLOR, FONT_SIZE)
+
+        # move history
+        last_move_offset = stats_offset[0] - box_size[0] // 3, stats_offset[1] + box_size[1] // 2 - 40
+        arcade.draw_text(f"Last 5 Moves:", *last_move_offset, FONT_COLOR, FONT_SIZE + 2)
+        for i, move in enumerate(self.play_board.move_history[-5:]):
+            arcade.draw_text(f"\t{move}", last_move_offset[0], last_move_offset[1] - (20 + i * 20), FONT_COLOR, FONT_SIZE)
+
 
     def __draw_piece(self, i, j):
         """Draws the piece at the given position."""

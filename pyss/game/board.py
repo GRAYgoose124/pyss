@@ -2,6 +2,8 @@ from copy import deepcopy
 import logging
 
 from functools import lru_cache
+
+from pyss.game.notation import generate_notation
 from .piece import piece_dict, Piece
 
 
@@ -20,7 +22,7 @@ class Chessboard:
         self.en_passant_available = False
         self.board = None
         self._check = None
-        self._last_move = None
+        self.move_history = []
 
         self._active_pieces = None
         self._by_color = None
@@ -83,15 +85,12 @@ class Chessboard:
 
     def reset(self, **kwargs):
         """Resets the board to its initial state"""
-        self._last_move = None
+        self.move_history = []
         self.en_passant_available = False
+        self._check = None
+
         self.board = Chessboard.initialize(**kwargs)
         self.__init_active_pieces()
-
-    def update(self):
-        """Updates the board"""
-        logger.debug("Updating board...")
-        self._updated = True
 
     def __init_active_pieces(self):
         """Updates the active pieces on the board"""
@@ -151,6 +150,7 @@ class Chessboard:
         elif piece.type in ["king", "rook"]:
             # check for castling by checking if king and rook have moved
             if not piece.has_moved:
+                # TODO: Should probably make a staticmethod to get initial positions for a given piece
                 other_positions = Piece(
                     piece.color, "rook" if piece.type == "king" else "king").initial_positions
                 for other_pos in other_positions:
@@ -323,8 +323,7 @@ class Chessboard:
         del self[position]
         self[new_position] = piece
         piece.has_moved = True
-
-        # self.update()
+        self.move_history.append(generate_notation(piece.type, piece.notation, position, new_position))
 
     # define index access to board
     def __getitem__(self, key):
