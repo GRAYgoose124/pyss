@@ -40,12 +40,12 @@ class ChessApp(arcade.Window):
         self._turns_enabled = True
         self.turn = "white"
 
-    def setup(self, rotate=True, depth=0, enable_turns=True):
+    def setup(self, rotate=True, depth=0, enable_turns=True, board_config={"no_initial_pieces":False}):
         self._rotate = rotate
         self._depth_search = depth - 1 if depth else 0
         self._turns_enabled = enable_turns
 
-        self.play_board.reset(initialize=True) # no_queens=True, no_knights=True, no_bishops=True)
+        self.play_board.reset(**board_config) # no_queens=True, no_knights=True, no_bishops=True)
 
     def on_draw(self):
         arcade.start_render()

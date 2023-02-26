@@ -17,7 +17,8 @@ class Chessboard:
     """
 
     def __init__(self, initialize=True):
-        self.reset(initialize=initialize)
+        if initialize:
+            self.reset()
 
     @staticmethod
     def initialize(no_pawns=False,
@@ -27,7 +28,7 @@ class Chessboard:
                          no_rooks=False,
                          no_bishops=False,
                          no_queens=False,
-                         one_each=False,
+                         no_second_special=False,
                          interlace_pawns=False,
                          no_initial_pieces=False,
                          ):
@@ -35,10 +36,11 @@ class Chessboard:
         board = [[None for _ in range(8)] for _ in range(8)]
 
         if not no_initial_pieces:
+            already_placed = { 'white': [], 'black': []}
+
             for ty in piece_dict:
                 if no_pawns and ty == "pawn":
                     continue
-                already_placed = []
                 for color in piece_dict[ty]["initial_positions"]:
                     for position in piece_dict[ty]["initial_positions"][color]:
                         if no_left_pawns and ty == "pawn":
@@ -57,11 +59,11 @@ class Chessboard:
                         if no_queens and ty == "queen":
                             continue
 
-                        if one_each and ty != "pawn":
-                            if position in already_placed:
+                        if no_second_special and ty != "pawn":
+                            if ty in already_placed[color]:
                                 continue
                             else:
-                                already_placed.append(position)
+                                already_placed[color].append(ty)
 
                         if interlace_pawns and ty == "pawn":
                             if position[1] % 2 == 0:
@@ -71,13 +73,12 @@ class Chessboard:
 
         return board
 
-    def reset(self, initialize=True, **kwargs):
+    def reset(self, **kwargs):
         """Resets the board to its initial state"""
         self._active_pieces = None
         self._last_move = None
         self.en_passant_available = False
-        self.board = Chessboard.initialize(
-            no_initial_pieces=not initialize, **kwargs)
+        self.board = Chessboard.initialize(**kwargs)
 
     @property
     def active_pieces(self):
