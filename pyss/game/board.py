@@ -17,26 +17,33 @@ class Chessboard:
     """
 
     def __init__(self, initialize=True):
+        self.en_passant_available = False
+        self.board = None
+        self._last_move = None
+
+        self._active_pieces = None
+        self._by_color = None
+
         if initialize:
             self.reset()
 
     @staticmethod
     def initialize(no_pawns=False,
-                         no_left_pawns=False,
-                         no_right_pawns=False,
-                         no_knights=False,
-                         no_rooks=False,
-                         no_bishops=False,
-                         no_queens=False,
-                         no_second_special=False,
-                         interlace_pawns=False,
-                         no_initial_pieces=False,
-                         ):
+                   no_left_pawns=False,
+                   no_right_pawns=False,
+                   no_knights=False,
+                   no_rooks=False,
+                   no_bishops=False,
+                   no_queens=False,
+                   no_second_special=False,
+                   interlace_pawns=False,
+                   no_initial_pieces=False,
+                   ):
         """Initializes the board with the starting positions of the pieces."""
         board = [[None for _ in range(8)] for _ in range(8)]
 
         if not no_initial_pieces:
-            already_placed = { 'white': [], 'black': []}
+            already_placed = {'white': [], 'black': []}
 
             for ty in piece_dict:
                 if no_pawns and ty == "pawn":
@@ -75,24 +82,29 @@ class Chessboard:
 
     def reset(self, **kwargs):
         """Resets the board to its initial state"""
-        self._active_pieces = None
         self._last_move = None
         self.en_passant_available = False
         self.board = Chessboard.initialize(**kwargs)
+        self.update_active_pieces()
 
-    @property
-    def active_pieces(self):
-        """Returns a list of all the pieces on the board"""
-        if self._active_pieces:
-            return self._active_pieces
+    def update(self):
+        """Updates the board"""
+        logger.debug("Updating board...")
+        self.update_active_pieces()
+
+    def update_active_pieces(self):
+        """Updates the active pieces on the board"""
 
         pieces = {}
+        by_color = {'white': [], 'black': []}
         for i, row in enumerate(self.board):
             for j, piece in enumerate(row):
                 if piece:
                     pieces[piece] = (i, j)
+                    by_color[piece.color].append(piece)
 
-        return pieces
+        self._by_color = by_color
+        self._active_pieces = pieces
 
     @property
     def last_move(self):
@@ -102,17 +114,21 @@ class Chessboard:
     # remove piece from active pieces
     def remove_piece(self, position):
         """Removes a piece from the board"""
-        self.board[position[0]][position[1]] = None
         # find piece in active pieces
-        for real_position, piece in self.active_pieces.items():
+        for real_position, piece in self._active_pieces.items():
             if piece == position:
-                del self.active_pieces[real_position]
+                del self._active_pieces[real_position]
+                self._by_color[self.get_piece_at(
+                    piece).color].remove(real_position)
                 break
+
+        self.board[position[0]][position[1]] = None
 
     def add_piece(self, piece, position):
         """Adds a piece to the board"""
         self.board[position[0]][position[1]] = piece
-        self.active_pieces[piece] = position
+        self._active_pieces[piece] = position
+        self._by_color[piece.color].append(piece)
 
     def valid_moves_to_depth(self, position, depth=3, all_valid_moves=None):
         """Returns a list of valid moves for a piece to a given depth. (max=3) """
@@ -158,7 +174,8 @@ class Chessboard:
         elif piece.type in ["king", "rook"]:
             # check for castling by checking if king and rook have moved
             if not piece.has_moved:
-                other_positions = Piece(piece.color, "rook" if piece.type == "king" else "king").initial_positions
+                other_positions = Piece(
+                    piece.color, "rook" if piece.type == "king" else "king").initial_positions
                 for other_pos in other_positions:
                     other_piece = self.get_piece_at(other_pos)
                     if other_piece and not other_piece.has_moved:
@@ -244,7 +261,7 @@ class Chessboard:
             next_piece = self.get_piece_at(next_position)
             moving_piece = self.get_piece_at(position)
             if next_piece and moving_piece and next_piece.compare_color(moving_piece) and\
-                next_piece.type not in ["king", "rook"] and not castling:
+                    next_piece.type not in ["king", "rook"] and not castling:
                 return False
             # if it's an enemy piece, check if we've already seen one or set
             # that we have
@@ -268,12 +285,12 @@ class Chessboard:
 
         if not piece:
             return
-        
+
         if piece.type in ["king", "rook"]:
             if other and other.type in ["king", "rook"] and other.type != piece.type:
                 self.remove_piece(new_position)
                 self.remove_piece(position)
-                
+
                 # castle the king and rook
                 # the rooks can be on either side of the king and 2 or 3 spaces away
                 # the right rook will end up on file 5 and the left on file 3
@@ -300,27 +317,29 @@ class Chessboard:
                 self.add_piece(other, other_position)
                 self.add_piece(piece, piece_position)
                 return
-            
+
         # if king, you cannot take
         if other and other.type == "king":
             return
-        
+
         if piece.type != "pawn" and self.en_passant_available:
             self.en_passant_available = False
 
-        if piece.type == "pawn": 
+        if piece.type == "pawn":
             # TODO: check for promotions
-            # En Passant               
+            # En Passant
             # check if pawn is moving two spaces from initial position
             if abs(new_position[0] - position[0]) == 2 and position in piece.initial_positions:
                 self.en_passant_available = new_position
             else:
                 # check if pawn is capturing en passant, en_passant_available is the position of the pawn that can be captured
-                vector = (new_position[0] - position[0], new_position[1] - position[1])
+                vector = (new_position[0] - position[0],
+                          new_position[1] - position[1])
                 if self.en_passant_available and new_position == self.en_passant_available and vector not in piece.valid_captures:
                     self.remove_piece(self.en_passant_available)
                     # new position is actually behind the captured pawn
-                    new_position = (self.en_passant_available[0] - 1 if piece.color == "white" else self.en_passant_available[0] + 1, new_position[1])
+                    new_position = (self.en_passant_available[0] - 1 if piece.color ==
+                                    "white" else self.en_passant_available[0] + 1, new_position[1])
                 self.en_passant_available = False
         else:
             # TODO: check for castling

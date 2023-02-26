@@ -40,12 +40,16 @@ class ChessApp(arcade.Window):
         self._turns_enabled = True
         self.turn = "white"
 
-    def setup(self, rotate=True, depth=0, enable_turns=True, board_config={"no_initial_pieces":False}):
+        self._score_updated = False
+        self._score_updated_on = None
+
+    def setup(self, rotate=True, depth=0, enable_turns=True, board_config={"no_initial_pieces": False}):
         self._rotate = rotate
         self._depth_search = depth - 1 if depth else 0
         self._turns_enabled = enable_turns
 
-        self.play_board.reset(**board_config) # no_queens=True, no_knights=True, no_bishops=True)
+        # no_queens=True, no_knights=True, no_bishops=True)
+        self.play_board.reset(**board_config)
 
     def on_draw(self):
         arcade.start_render()
@@ -114,7 +118,7 @@ class ChessApp(arcade.Window):
                 board.append(tile)
 
         return board
-    
+
     def __draw_rank_and_file(self):
         """Draws the rank and file of the board."""
         for i in range(8):
@@ -126,7 +130,16 @@ class ChessApp(arcade.Window):
     def __draw_stats(self):
         """Draws the stats of the game."""
         if self._turns_enabled:
-            arcade.draw_text(f"Turn: {self.turn}", 10, 10, arcade.color.RED, 14)
+            arcade.draw_text(f"Turn: {self.turn}", 10,
+                             10, arcade.color.RED, 14)
+
+        if self.turn != self._score_updated_on:
+            self._score_updated = sum([p.value for p in self.play_board._by_color["white"]]) - sum(
+                [p.value for p in self.play_board._by_color["black"]])
+            self._score_updated_on = self.turn
+
+        arcade.draw_text(f"Score: {self._score_updated}",
+                         10, 30, arcade.color.RED, 14)
 
     def __draw_piece(self, i, j):
         """Draws the piece at the given position."""
@@ -242,7 +255,7 @@ class ChessApp(arcade.Window):
 
             # force rebuild drawlists
             if self._selected_piece in self._depth_drawlists:
-                del(self._depth_drawlists[self._selected_piece])
+                del (self._depth_drawlists[self._selected_piece])
 
             self._selected_depth_bins = depth_bins
 
@@ -337,5 +350,8 @@ class ChessApp(arcade.Window):
 
                 if self._turns_enabled:
                     self.turn = "black" if self.turn == "white" else "white"
+
+                # update board
+                self.play_board.update()
 
                 return True
