@@ -29,7 +29,7 @@ class Chessboard:
                          no_queens=False,
                          one_each=False,
                          interlace_pawns=False,
-                         no_initial_pieces=False
+                         no_initial_pieces=False,
                          ):
         """Initializes the board with the starting positions of the pieces."""
         board = [[None for _ in range(8)] for _ in range(8)]
@@ -74,7 +74,8 @@ class Chessboard:
     def reset(self, initialize=True):
         """Resets the board to its initial state"""
         self._active_pieces = None
-        self.board = Chessboard.initialize_board(no_initial_pieces=not initialize)
+        self.board = Chessboard.initialize_board(
+            no_initial_pieces=not initialize)
 
     @property
     def active_pieces(self):
