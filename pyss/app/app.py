@@ -54,11 +54,21 @@ class ChessApp(arcade.Window):
         if delta_time < 1 / 60:
             return
 
+    # access
     @property
     def board(self):
         if self._board is None:
             self._create_board()
         return self._board
+
+    def get_tile(self, x, y):
+        """Get the tile at the given position, handling rotation."""
+        i = (x - self.offset[0]) // self.tile_size
+        j = (y - self.offset[1]) // self.tile_size
+        if self._rotate:
+            return j, i
+
+        return i, j
 
     def reset_selection(self):
         self.selected_piece = None
@@ -72,7 +82,9 @@ class ChessApp(arcade.Window):
         self._depth_bins = {}
         self._depth_drawlists = {}
 
+    # drawing
     def _create_board(self):
+        """Creates the graphical representation of the board."""
         board = arcade.ShapeElementList()
 
         def create_tile(color, i, j): return arcade.create_rectangle_filled(self.offset[0] + (i * self.tile_size + self.tile_size * 0.5),
@@ -147,12 +159,32 @@ class ChessApp(arcade.Window):
                 jx * self.tile_size + self.tile_size * 0.5),
                 self.tile_size // ((size ** 1.5) + 2), self.tile_size // ((size ** 1.5) + 2), color))
         return drawlist        
+    
+    def draw_valid_moves(self):
+        """Show valid moves for selected piece."""
+        if self.selected_piece is None:
+            return
 
-    def _update_depth_bins(self, changed_positions):
-        pass
+        if self._selected_valid_moves is None and self._selected_depth_moves is None:
+            return
 
+        if self._depth_search > 0:
+            self._prepare_depth_map()
+            if self.selected_piece not in self._depth_drawlists:
+                self._create_depth_map()
 
-    def _build_depth_map(self):
+            self._depth_drawlists[self.selected_piece].draw()
+        else:
+            if self._selected_moves_list is None:
+                self._selected_moves_list = self._create_moves_list(
+                    self._selected_valid_moves)
+                
+            self._selected_moves_list.draw()
+
+    # def _update_depth_bins(self, changed_positions):
+    #     pass
+
+    def _prepare_depth_map(self):
         """ Build and set the depth map for the selected piece.
 
         Class Args Modified: TODO: properties and group into subclass?
@@ -208,55 +240,22 @@ class ChessApp(arcade.Window):
             if depth is not None:
                 self._selected_valid_moves = self._selected_depth_bins[depth]
 
-    def _draw_valid_depth(self):
-        self._build_depth_map()
+    def _create_depth_map(self):
+        self._depth_drawlists[self.selected_piece] = arcade.ShapeElementList()
+    
+        depth_drawlists = []
+        for i, valid_moves in self._selected_depth_bins.items():
+            color = DEPTH_COLOR_PALETTE[(
+                self._depth_search - i) % len(DEPTH_COLOR_PALETTE)]
+            drawlist = self._create_moves_list(
+                valid_moves, color=color, size=(
+                    self._depth_search - i) + 1)
+            depth_drawlists.extend(drawlist)
 
-        # if no cached drawlists, create them
-        if self.selected_piece not in self._depth_drawlists:
-            # create drawlist for each depth and combine int ShapeElementList
-            self._depth_drawlists[self.selected_piece] = arcade.ShapeElementList()
-        
-            depth_drawlists = []
-            for i, valid_moves in self._selected_depth_bins.items():
-                color = DEPTH_COLOR_PALETTE[(
-                    self._depth_search - i) % len(DEPTH_COLOR_PALETTE)]
-                drawlist = self._create_moves_list(
-                    valid_moves, color=color, size=(
-                        self._depth_search - i) + 1)
-                depth_drawlists.extend(drawlist)
+        for s in depth_drawlists:
+            self._depth_drawlists[self.selected_piece].append(s)
 
-            for s in depth_drawlists:
-                self._depth_drawlists[self.selected_piece].append(s)
-
-        # draw the drawlist
-        self._depth_drawlists[self.selected_piece].draw()
-
-    def draw_valid_moves(self):
-        """Show valid moves for selected piece."""
-        if self.selected_piece is None:
-            return
-
-        if self._selected_valid_moves is None and self._selected_depth_moves is None:
-            return
-
-        if self._depth_search > 0:
-            self._draw_valid_depth()
-        else:
-            if self._selected_moves_list is None:
-                self._selected_moves_list = self._create_moves_list(
-                    self._selected_valid_moves)
-            self._selected_moves_list.draw()
-
-    def get_tile(self, x, y):
-        """Get the tile at the given position, handling rotation."""
-        i = (x - self.offset[0]) // self.tile_size
-        j = (y - self.offset[1]) // self.tile_size
-        if self._rotate:
-            return j, i
-
-        return i, j
-
-    # interaction
+    # GUI interactivity
     def on_mouse_press(self, x, y, button, modifiers):
         if button == arcade.MOUSE_BUTTON_LEFT:
             i, j = self.get_tile(x, y)
