@@ -81,10 +81,11 @@ class ChessApp(arcade.Window):
         """Resets the selection of a piece."""
         self._selected_piece = None
         self._old_selected_piece = None
+        self._selected_valid_moves = None
+
         self._selected_depth_bins = None
         self._selected_depth_moves = None
         self._selected_moves_list = None
-        self._selected_valid_moves = None
 
     def _reset_depth_bins(self):
         """Resets the depth bins."""
@@ -205,14 +206,6 @@ class ChessApp(arcade.Window):
         if self._selected_depth_bins is None:
             if self._depth_bins is not None and self._selected_piece in self._depth_bins:
                 self._selected_depth_bins = self._depth_bins[self._selected_piece]
-                # get min key in self._selected_depth_bins
-                # TODO: ISSUE / Theoretically losing the depth at the edge is part of the cause
-                # for the top edge failure.
-                if len(self._selected_depth_bins):
-                    self._selected_depth_moves = self._selected_depth_bins[min(
-                        self._selected_depth_bins.keys())]
-                else:
-                    return
 
         # if no cached bins, create them
         if self._selected_depth_bins is None:
@@ -224,6 +217,12 @@ class ChessApp(arcade.Window):
                 if depth not in depth_bins:
                     depth_bins[depth] = []
                 depth_bins[depth].extend(move[1])
+
+            # cache depth bins
+            if self._depth_bins is None:
+                self._depth_bins = {}
+
+            self._depth_bins[self._selected_piece] = depth_bins
 
             # force rebuild valid moves
             if self._selected_valid_moves is not None:
@@ -287,19 +286,21 @@ class ChessApp(arcade.Window):
         if selection:
           # toggle selection
             if self._selected_piece == (i, j):
-                if self._depth_search and (i, j) not in self._depth_bins:
-                    self._depth_bins[(i, j)] = self._selected_depth_bins
                 self._reset_selection()
                 return
             else:
-                if self._depth_search and self._selected_piece not in self._depth_bins:
-                    self._depth_bins[self._selected_piece] = self._selected_depth_bins
                 self._reset_selection()
                 self._selected_piece = i, j
 
             if self._depth_search:
-                self._selected_depth_moves = self.play_board.valid_moves_to_depth(
-                    self._selected_piece, depth=self._depth_search)
+                try:
+                    self.__prepare_depth_map()
+                except TypeError:
+                    pass
+
+                if self._selected_depth_moves is None:
+                    self._selected_depth_moves = self.play_board.valid_moves_to_depth(
+                        self._selected_piece, depth=self._depth_search)
             else:
                 self._selected_valid_moves = self.play_board.valid_moves(
                     self._selected_piece)

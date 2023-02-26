@@ -182,7 +182,7 @@ class Chessboard:
                     else:
                         valid_moves.append(new_position)
 
-        logger.debug(f"Valid moves for {piece} at {position}: {valid_moves}")
+        # logger.debug(f"Valid moves for {piece} at {position}: {valid_moves}")
         return valid_moves
 
     def board_safe(self, position, new_position):
