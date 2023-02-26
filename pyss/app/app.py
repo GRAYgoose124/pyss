@@ -146,10 +146,33 @@ class ChessApp(arcade.Window):
                                                          self.offset[1] + (
                 jx * self.tile_size + self.tile_size * 0.5),
                 self.tile_size // ((size ** 1.5) + 2), self.tile_size // ((size ** 1.5) + 2), color))
-        return drawlist
+        return drawlist        
 
-    def _draw_valid_depth(self):
-        # filter out [] from self._selected_valid_moves
+    def _update_depth_bins(self, changed_positions):
+        pass
+
+
+    def _build_depth_map(self):
+        """ Build and set the depth map for the selected piece.
+
+        Class Args Modified: TODO: properties and group into subclass?
+            self._selected_depth_bins is a dict of depth: valid_moves
+            self._selected_depth_moves is a list of (depth, valid_moves) tuples
+                This is usually self._selected_depth_bins[0]
+
+            self._selected_valid_moves is a list of valid_moves a player can make
+        """
+        # first use cached depth bins
+        if self._selected_depth_bins is None:
+            if self._depth_bins is not None and self.selected_piece in self._depth_bins:
+                self._selected_depth_bins = self._depth_bins[self.selected_piece]
+                # get min key in self._selected_depth_bins
+                # TODO: ISSUE / Theoretically losing the depth at the edge is part of the cause
+                # for the top edge failure.
+                depth = min(self._selected_depth_bins.keys())
+                self._selected_depth_moves = self._selected_depth_bins[depth]
+
+        # if no cached bins, create them
         if self._selected_depth_bins is None:
             valid_ms = [vms for vms in self._selected_depth_moves if vms[1]]
             # collect moves by depth, each set of moves is (depth, valid_moves)
@@ -160,18 +183,36 @@ class ChessApp(arcade.Window):
                     depth_bins[depth] = []
                 depth_bins[depth].extend(move[1])
 
-            if self._depth_search not in depth_bins:
-                return
+            # force rebuild valid moves
+            if self._selected_valid_moves is not None:
+                self._selected_valid_moves = None
+            # force rebuild drawlists
+            if self.selected_piece in self._depth_drawlists:
+                del(self._depth_drawlists[self.selected_piece])
 
             self._selected_depth_bins = depth_bins
 
+        # if valid moves not yet selected, select them
         if self._selected_valid_moves is None:
-            self._selected_valid_moves = self._selected_depth_bins[self._depth_search]
+            if self._depth_search not in self._selected_depth_bins:
+                try:
+                    depth = min(self._selected_depth_bins.keys(), default=None)
+                except ValueError:
+                    depth = None
+            else:
+                depth = self._depth_search
 
-        # create drawlist for each depth and combine int ShapeElementList
+            if depth is not None:
+                self._selected_valid_moves = self._selected_depth_bins[depth]
+
+    def _draw_valid_depth(self):
+        self._build_depth_map()
+
+        # if no cached drawlists, create them
         if self.selected_piece not in self._depth_drawlists:
-            self._depth_drawlists[self.selected_piece] = arcade.ShapeElementList(
-            )
+            # create drawlist for each depth and combine int ShapeElementList
+            self._depth_drawlists[self.selected_piece] = arcade.ShapeElementList()
+        
             depth_drawlists = []
             for i, valid_moves in self._selected_depth_bins.items():
                 color = DEPTH_COLOR_PALETTE[(
@@ -180,9 +221,11 @@ class ChessApp(arcade.Window):
                     valid_moves, color=color, size=(
                         self._depth_search - i) + 1)
                 depth_drawlists.extend(drawlist)
+
             for s in depth_drawlists:
                 self._depth_drawlists[self.selected_piece].append(s)
 
+        # draw the drawlist
         self._depth_drawlists[self.selected_piece].draw()
 
     def draw_valid_moves(self):
@@ -238,17 +281,6 @@ class ChessApp(arcade.Window):
                 self.selected_piece = i, j
 
             if self._depth_search:
-                if self._selected_depth_bins is None:
-                    if self.selected_piece and self.selected_piece in self._depth_bins and self._depth_bins[
-                            self.selected_piece]:
-                        self._selected_depth_bins = self._depth_bins[self.selected_piece]
-                        # get min key in self._selected_depth_bins,
-                        # TODO: ISSUE / Theoretically losing the depth at the edge is part of the cause
-                        # for the top edge failure.
-                        min_key = min(self._selected_depth_bins.keys())
-                        self._selected_depth_moves = self._selected_depth_bins[min_key]
-                        return
-
                 self._selected_depth_moves = self.play_board.valid_moves_to_depth(
                     self.selected_piece, depth=self._depth_search)
             else:
@@ -270,5 +302,6 @@ class ChessApp(arcade.Window):
         if (i, j) in selected_valid_moves:
             if (i, j) != self.selected_piece:
                 self.play_board.move(self.selected_piece, (i, j))
-                self.reset_depth_bins()
+                # self._update_depth_bins([self.selected_piece, (i, j)])
+                self.reset_depth_bins() # TODO: rebuild instead
                 return True
