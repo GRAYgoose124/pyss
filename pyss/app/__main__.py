@@ -7,7 +7,7 @@ from .app import ChessApp
 
 def argparser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--depth", type=int, default=0,
+    parser.add_argument("-d", "--depth", type=int, default=2,
                         help="Visual depth")
     parser.add_argument("-nt", "--disable-turns", action="store_true", default=False,
                         help="Disable turns")
