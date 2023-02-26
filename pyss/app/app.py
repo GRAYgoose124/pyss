@@ -43,7 +43,7 @@ class ChessApp(arcade.Window):
         self._rotate = rotate
         self._depth_search = depth - 1 if depth else 0
 
-        self.play_board.reset()
+        self.play_board.reset(initialize=True) # no_queens=True, no_knights=True, no_bishops=True)
 
     def on_draw(self):
         arcade.start_render()

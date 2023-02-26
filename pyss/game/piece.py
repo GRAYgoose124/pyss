@@ -62,6 +62,8 @@ class Piece:
 
         self._valid_moves = None
 
+        self.has_moved = False
+
     @staticmethod
     def random_piece():
         """Returns a random piece"""

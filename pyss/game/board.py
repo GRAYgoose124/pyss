@@ -20,7 +20,7 @@ class Chessboard:
         self.reset(initialize=initialize)
 
     @staticmethod
-    def initialize_board(no_pawns=False,
+    def initialize(no_pawns=False,
                          no_left_pawns=False,
                          no_right_pawns=False,
                          no_knights=False,
@@ -71,13 +71,13 @@ class Chessboard:
 
         return board
 
-    def reset(self, initialize=True):
+    def reset(self, initialize=True, **kwargs):
         """Resets the board to its initial state"""
         self._active_pieces = None
         self._last_move = None
         self.en_passant_available = False
-        self.board = Chessboard.initialize_board(
-            no_initial_pieces=not initialize)
+        self.board = Chessboard.initialize(
+            no_initial_pieces=not initialize, **kwargs)
 
     @property
     def active_pieces(self):
@@ -107,6 +107,11 @@ class Chessboard:
             if piece == position:
                 del self.active_pieces[real_position]
                 break
+
+    def add_piece(self, piece, position):
+        """Adds a piece to the board"""
+        self.board[position[0]][position[1]] = piece
+        self.active_pieces[piece] = position
 
     def valid_moves_to_depth(self, position, depth=3, all_valid_moves=None):
         """Returns a list of valid moves for a piece to a given depth. (max=3) """
@@ -143,6 +148,23 @@ class Chessboard:
         if not piece:
             return []
 
+        if piece.type == "pawn":
+            # TODO: check for promotion
+            # check for en passant, self.en_passant_available is the position of the pawn that can be captured
+            if self.en_passant_available:
+                if self.en_passant_available[0] == position[0] and abs(self.en_passant_available[1] - position[1]) == 1:
+                    valid_moves.append(self.en_passant_available)
+        elif piece.type in ["king", "rook"]:
+            # check for castling by checking if king and rook have moved
+            if not piece.has_moved:
+                other_positions = Piece(piece.color, "rook" if piece.type == "king" else "king").initial_positions
+                for other_pos in other_positions:
+                    other_piece = self.get_piece_at(other_pos)
+                    if other_piece and not other_piece.has_moved:
+                        # check if path is clear
+                        if self.check_path(position, other_pos):
+                            valid_moves.append(other_pos)
+
         for move in piece.valid_relative_moves:
             for displacement in range(1, piece.displacement + 1):
                 new_position = (
@@ -150,7 +172,6 @@ class Chessboard:
                     position[1] + move[1] * displacement)
                 if self.board_safe(position, new_position):
                     if piece.type in ["bishop", "rook", "queen"]:
-                        # TODO: Check for castling
                         if self.check_path(position, new_position):
                             valid_moves.append(new_position)
                     elif piece.type == "pawn":
@@ -172,13 +193,6 @@ class Chessboard:
                             if self.board_safe(position, new_position):
                                 if not self.get_piece_at(new_position):
                                     valid_moves.append(new_position)
-
-                        # check for en passant, self.en_passant_available is the position of the pawn that can be captured
-                        if self.en_passant_available:
-                            if self.en_passant_available[0] == position[0] and abs(self.en_passant_available[1] - position[1]) == 1:
-                                valid_moves.append(self.en_passant_available)
-                            
-                        # TODO: check for promotion
                     else:
                         valid_moves.append(new_position)
 
@@ -217,7 +231,7 @@ class Chessboard:
 
         # check if the path is clear
         seen_enemy = False
-        for i in range(distance):
+        for i in range(distance-1):
             # get the position of the next space in the path
             next_position = (position[0] +
                              (i + 1) * direction[0] // distance,
@@ -251,11 +265,43 @@ class Chessboard:
         if not piece:
             return
         
+        if piece.type in ["king", "rook"]:
+            other = self.get_piece_at(new_position) 
+            if other and other.type in ["king", "rook"] and other.type != piece.type:
+                self.remove_piece(new_position)
+                self.remove_piece(position)
+                
+                # castle the king and rook
+                # the rooks can be on either side of the king and 2 or 3 spaces away
+                # the right rook will end up on file 5 and the left on file 3
+                # the king will move +2 or -2 spaces
+                # left rook
+                if position[1] == 7:
+                    other_position = (position[0], 5)
+                    piece_position = (position[0], 4)
+                # right rook
+                elif position[1] == 0:
+                    other_position = (position[0], 1)
+                    piece_position = (position[0], 2)
+                # king
+                else:
+                    # moving right
+                    if position[1] < new_position[1]:
+                        other_position = (position[0], 4)
+                        piece_position = (position[0], 5)
+                    # moving left
+                    else:
+                        other_position = (position[0], 2)
+                        piece_position = (position[0], 1)
+
+                self.add_piece(other, other_position)
+                self.add_piece(piece, piece_position)
+                return
+            
         # if king, you cannot take
         if piece.type == "king":
-            if self.get_piece_at(new_position):
-                return
-
+            return
+        
         if piece.type != "pawn" and self.en_passant_available:
             self.en_passant_available = False
 
@@ -278,6 +324,7 @@ class Chessboard:
             if self.board[new_position[0]][new_position[1]]:
                 self.remove_piece(new_position)
 
+        piece.has_moved = True
         self.board[new_position[0]][new_position[1]] = piece
         self.board[position[0]][position[1]] = None
         self._updated = True

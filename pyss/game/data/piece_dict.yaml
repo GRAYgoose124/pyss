@@ -39,11 +39,11 @@ king:
     black:
     - !!python/tuple
       - 0
-      - 4
+      - 3
     white:
     - !!python/tuple
       - 7
-      - 4
+      - 3
   notation: K
   unicode:
     black: "\u265A"
@@ -65,6 +65,13 @@ king:
   - *id002
   - *id003
   - *id004
+  valid_castles:
+  - !!python/tuple
+    - 0
+    - -2
+  - !!python/tuple
+    - 0
+    - 3
   value: 0
 knight:
   displacement: 1
@@ -187,11 +194,11 @@ queen:
     black:
     - !!python/tuple
       - 0
-      - 3
+      - 4
     white:
     - !!python/tuple
       - 7
-      - 3
+      - 4
   notation: Q
   unicode:
     black: "\u265B"

@@ -5,13 +5,13 @@
       "name": "Python Poetry",
       "type": "python",
       "request": "launch",
-      "module": "pychess",
+      "module": "pyss",
       "python": "/home/goose/.py311/bin/python3.11",
       "cwd": "${workspaceFolder}",
       "env": {
         "PYTHONPATH": "/home/goose/.py311/lib/python3.11/site-packages"
       },
-      "args": [],
+      "args": [ "-d=3" ],
       "justMyCode": true
     }
   ]
