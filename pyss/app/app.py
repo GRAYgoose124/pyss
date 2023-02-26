@@ -37,11 +37,13 @@ class ChessApp(arcade.Window):
 
         # game
         self.play_board = Chessboard(initialize=False)
+        self._turns_enabled = True
         self.turn = "white"
 
-    def setup(self, rotate=True, depth=0):
+    def setup(self, rotate=True, depth=0, enable_turns=True):
         self._rotate = rotate
         self._depth_search = depth - 1 if depth else 0
+        self._turns_enabled = enable_turns
 
         self.play_board.reset(initialize=True) # no_queens=True, no_knights=True, no_bishops=True)
 
@@ -114,7 +116,8 @@ class ChessApp(arcade.Window):
 
     def __draw_stats(self):
         """Draws the stats of the game."""
-        arcade.draw_text(f"Turn: {self.turn}", 10, 10, arcade.color.RED, 14)
+        if self._turns_enabled:
+            arcade.draw_text(f"Turn: {self.turn}", 10, 10, arcade.color.RED, 14)
 
     def __draw_piece(self, i, j):
         """Draws the piece at the given position."""
@@ -279,7 +282,7 @@ class ChessApp(arcade.Window):
         """Select a piece, or deselect if already selected."""
         selection = self.play_board[i, j]
 
-        if selection and selection.color != self.turn:
+        if selection and self._turns_enabled and selection.color != self.turn:
             self._reset_selection()
             return
 
@@ -322,5 +325,8 @@ class ChessApp(arcade.Window):
                 self.play_board.move(self._selected_piece, (i, j))
                 # self._update_depth_bins([self.selected_piece, (i, j)])
                 self._reset_depth_bins()  # TODO: rebuild instead
-                self.turn = "black" if self.turn == "white" else "white"
+
+                if self._turns_enabled:
+                    self.turn = "black" if self.turn == "white" else "white"
+
                 return True

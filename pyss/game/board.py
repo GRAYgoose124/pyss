@@ -262,11 +262,12 @@ class Chessboard:
     def move(self, position, new_position):
         """ Unsafely moves a piece destroying any piece that is in the destionatoin. """
         piece = self.get_piece_at(position)
+        other = self.get_piece_at(new_position)
+
         if not piece:
             return
         
         if piece.type in ["king", "rook"]:
-            other = self.get_piece_at(new_position) 
             if other and other.type in ["king", "rook"] and other.type != piece.type:
                 self.remove_piece(new_position)
                 self.remove_piece(position)
@@ -299,7 +300,7 @@ class Chessboard:
                 return
             
         # if king, you cannot take
-        if piece.type == "king":
+        if other and other.type == "king":
             return
         
         if piece.type != "pawn" and self.en_passant_available:

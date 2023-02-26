@@ -9,6 +9,8 @@ def argparser():
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--depth", type=int, default=0,
                         help="Visual depth")
+    parser.add_argument("-nt", "--disable-turns", action="store_true", default=False,
+                        help="Disable turns")
 
     return parser
 
@@ -21,7 +23,7 @@ def main():
     args = argparser().parse_args()
 
     app = ChessApp()
-    app.setup(depth=args.depth)
+    app.setup(depth=args.depth, enable_turns=not args.disable_turns)
 
     arcade.run()
 
