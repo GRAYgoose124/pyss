@@ -74,6 +74,8 @@ class Chessboard:
     def reset(self, initialize=True):
         """Resets the board to its initial state"""
         self._active_pieces = None
+        self._last_move = None
+        self.en_passant_available = False
         self.board = Chessboard.initialize_board(
             no_initial_pieces=not initialize)
 
@@ -90,6 +92,11 @@ class Chessboard:
                     pieces[piece] = (i, j)
 
         return pieces
+
+    @property
+    def last_move(self):
+        """Returns the last move made on the board"""
+        return self._last_move
 
     # remove piece from active pieces
     def remove_piece(self, position):
@@ -165,7 +172,11 @@ class Chessboard:
                                 if not self.get_piece_at(new_position):
                                     valid_moves.append(new_position)
 
-                        # TODO: check for en passant, this will require keeping track of the last move
+                        # check for en passant, self.en_passant_available is the position of the pawn that can be captured
+                        if self.en_passant_available:
+                            if self.en_passant_available[0] == position[0] and abs(self.en_passant_available[1] - position[1]) == 1:
+                                valid_moves.append(self.en_passant_available)
+                            
                         # TODO: check for promotion
                     else:
                         valid_moves.append(new_position)
@@ -236,8 +247,28 @@ class Chessboard:
     def move(self, position, new_position):
         """ Unsafely moves a piece destroying any piece that is in the destionatoin. """
         piece = self.get_piece_at(position)
-        if self.board[new_position[0]][new_position[1]]:
-            self.remove_piece(new_position)
+        if not piece:
+            return
+
+        if piece.type != "pawn" and self.en_passant_available:
+            self.en_passant_available = False
+
+        if piece.type == "pawn":                
+            # check if pawn is moving two spaces from initial position
+            if abs(new_position[0] - position[0]) == 2 and position in piece.initial_positions:
+                self.en_passant_available = new_position
+            else:
+                # check if pawn is capturing en passant, en_passant_available is the position of the pawn that can be captured
+                vector = (new_position[0] - position[0], new_position[1] - position[1])
+                if self.en_passant_available and new_position == self.en_passant_available and vector not in piece.valid_captures:
+                    self.remove_piece(self.en_passant_available)
+                    # new position is actually behind the captured pawn
+                    new_position = (self.en_passant_available[0] - 1 if piece.color == "white" else self.en_passant_available[0] + 1, new_position[1])
+                self.en_passant_available = False
+        else:
+            if self.board[new_position[0]][new_position[1]]:
+                self.remove_piece(new_position)
+
         self.board[new_position[0]][new_position[1]] = piece
         self.board[position[0]][position[1]] = None
         self._updated = True
