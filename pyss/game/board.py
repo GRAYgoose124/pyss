@@ -150,6 +150,7 @@ class Chessboard:
                     position[1] + move[1] * displacement)
                 if self.board_safe(position, new_position):
                     if piece.type in ["bishop", "rook", "queen"]:
+                        # TODO: Check for castling
                         if self.check_path(position, new_position):
                             valid_moves.append(new_position)
                     elif piece.type == "pawn":
@@ -249,11 +250,18 @@ class Chessboard:
         piece = self.get_piece_at(position)
         if not piece:
             return
+        
+        # if king, you cannot take
+        if piece.type == "king":
+            if self.get_piece_at(new_position):
+                return
 
         if piece.type != "pawn" and self.en_passant_available:
             self.en_passant_available = False
 
-        if piece.type == "pawn":                
+        if piece.type == "pawn": 
+            # TODO: check for promotions
+            # En Passant               
             # check if pawn is moving two spaces from initial position
             if abs(new_position[0] - position[0]) == 2 and position in piece.initial_positions:
                 self.en_passant_available = new_position
@@ -266,6 +274,7 @@ class Chessboard:
                     new_position = (self.en_passant_available[0] - 1 if piece.color == "white" else self.en_passant_available[0] + 1, new_position[1])
                 self.en_passant_available = False
         else:
+            # TODO: check for castling
             if self.board[new_position[0]][new_position[1]]:
                 self.remove_piece(new_position)
 

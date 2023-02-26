@@ -49,8 +49,8 @@ class ChessApp(arcade.Window):
         arcade.start_render()
 
         self._display_board.draw()
-        self.__draw_valid_moves()
         self.__draw_pieces()
+        self.__draw_valid_moves()
         self.__draw_stats()
 
     def update(self, delta_time):
@@ -208,11 +208,11 @@ class ChessApp(arcade.Window):
                 # get min key in self._selected_depth_bins
                 # TODO: ISSUE / Theoretically losing the depth at the edge is part of the cause
                 # for the top edge failure.
-                # if len(self._selected_depth_bins):
-                #     self._selected_depth_moves = self._selected_depth_bins[min(
-                #         self._selected_depth_bins.keys())]
-                # else:
-                #     return
+                if len(self._selected_depth_bins):
+                    self._selected_depth_moves = self._selected_depth_bins[min(
+                        self._selected_depth_bins.keys())]
+                else:
+                    return
 
         # if no cached bins, create them
         if self._selected_depth_bins is None:
