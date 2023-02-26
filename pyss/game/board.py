@@ -156,6 +156,17 @@ class Chessboard:
                                 if p and not piece.compare_color(p):
                                     valid_moves.append(capture_position)
 
+                        # if initial position, check two squares
+                        if position in piece.initial_positions:
+                            new_position = (
+                                position[0] + move[0] * 2,
+                                position[1] + move[1] * 2)
+                            if self.board_safe(position, new_position):
+                                if not self.get_piece_at(new_position):
+                                    valid_moves.append(new_position)
+
+                        # TODO: check for en passant, this will require keeping track of the last move
+                        # TODO: check for promotion
                     else:
                         valid_moves.append(new_position)
 

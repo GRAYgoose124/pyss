@@ -1,5 +1,5 @@
 # PyssChess
-![](https://github.com/GRAYgoose124/pyss/blob/main/screenshots/pyss1.png)
+![](https://github.com/GRAYgoose124/pyss/blob/main/screenshots/depth.png)
 
 A piss poor chess implementation!
 
