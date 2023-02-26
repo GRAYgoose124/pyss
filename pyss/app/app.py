@@ -130,14 +130,19 @@ class ChessApp(arcade.Window):
 
     def __draw_stats(self):
         """Draws the stats of the game."""
+        FONT_SIZE = 8
         if self._turns_enabled:
-            arcade.draw_text(f"Turn: {self.turn}", 10, 10, arcade.color.RED, 14)
+            arcade.draw_text(f"Turn: {self.turn}", 10, 10, arcade.color.RED, FONT_SIZE)
 
         if self.turn != self._score_updated_on:
             self._score_updated = sum([p.value for p in self.play_board._by_color["white"]]) - sum([p.value for p in self.play_board._by_color["black"]])
             self._score_updated_on = self.turn
 
-        arcade.draw_text(f"Score: {self._score_updated}", 10, 30, arcade.color.RED, 14)
+        arcade.draw_text(f"Score: {self._score_updated}", 10, 30, arcade.color.RED, FONT_SIZE)
+
+        # active pieces count
+        arcade.draw_text(f"White: {len(self.play_board._by_color['white'])}", 10, 50, arcade.color.RED, FONT_SIZE)
+        arcade.draw_text(f"Black: {len(self.play_board._by_color['black'])}", 10, 70, arcade.color.RED, FONT_SIZE)
 
     def __draw_piece(self, i, j):
         """Draws the piece at the given position."""
@@ -302,6 +307,7 @@ class ChessApp(arcade.Window):
         """Select a piece, or deselect if already selected."""
         selection = self.play_board[i, j]
 
+        # deselect/block selection if not our turn
         if selection and self._turns_enabled and selection.color != self.turn:
             self._reset_selection()
             return
@@ -315,11 +321,14 @@ class ChessApp(arcade.Window):
                 self._reset_selection()
                 self._selected_piece = i, j
 
+            # get valid moves
             if self._depth_search:
+                # Depth is recursive over .valid_moves()
                 if self._selected_depth_moves is None:
                     self._selected_depth_moves = self.play_board.valid_moves_to_depth(
                         self._selected_piece, depth=self._depth_search)
             else:
+                # Depth is 0, so just get valid moves
                 self._selected_valid_moves = self.play_board.valid_moves(
                     self._selected_piece)
         else:
@@ -338,7 +347,7 @@ class ChessApp(arcade.Window):
 
         # if the attempted click is a valid move, try to make it
         if (i, j) in selected_valid_moves:
-            other = self.play_board.get_piece_at((i, j))
+            other = self.play_board[i, j]
             # king check is a hack because for some reason selecting it swaps the turn - probably because you can't capture it
             if other and other.type == "king" and other.color != self.turn:
                 return False

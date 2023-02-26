@@ -19,6 +19,7 @@ class Chessboard:
     def __init__(self, initialize=True):
         self.en_passant_available = False
         self.board = None
+        self._check = None
         self._last_move = None
 
         self._active_pieces = None
@@ -85,15 +86,14 @@ class Chessboard:
         self._last_move = None
         self.en_passant_available = False
         self.board = Chessboard.initialize(**kwargs)
-        self.update_active_pieces()
+        self.__init_active_pieces()
 
     def update(self):
         """Updates the board"""
         logger.debug("Updating board...")
         self._updated = True
-        self.update_active_pieces()
 
-    def update_active_pieces(self):
+    def __init_active_pieces(self):
         """Updates the active pieces on the board"""
 
         pieces = {}
@@ -107,36 +107,12 @@ class Chessboard:
         self._by_color = by_color
         self._active_pieces = pieces
 
-    @property
-    def last_move(self):
-        """Returns the last move made on the board"""
-        return self._last_move
-
-    # remove piece from active pieces
-    def remove_piece(self, position):
-        """Removes a piece from the board"""
-        # find piece in active pieces
-        for real_position, piece in self._active_pieces.items():
-            if piece == position:
-                del self._active_pieces[real_position]
-                self._by_color[self.get_piece_at(
-                    piece).color].remove(real_position)
-                break
-
-        self.board[position[0]][position[1]] = None
-
-    def add_piece(self, piece, position):
-        """Adds a piece to the board"""
-        self.board[position[0]][position[1]] = piece
-        self._active_pieces[piece] = position
-        self._by_color[piece.color].append(piece)
-
     def valid_moves_to_depth(self, position, depth=3, all_valid_moves=None):
         """Returns a list of valid moves for a piece to a given depth. (max=3) """
         if all_valid_moves is None:
             all_valid_moves = []
 
-        original_piece = self.get_piece_at(position)
+        original_piece = self[position]
         if not original_piece or depth < 0:
             return all_valid_moves
 
@@ -144,8 +120,8 @@ class Chessboard:
         valid_moves = self.valid_moves(position)
         all_valid_moves.append((depth, valid_moves))
         for move in valid_moves:
-            # simulate move
-            move_piece = self.get_piece_at(move)
+            # simulate move - we don't use getters/setters here because we don't want to update the board
+            move_piece = self[move]
             self.board[move[0]][move[1]] = original_piece
 
             # check valid moves for piece
@@ -162,7 +138,7 @@ class Chessboard:
     def valid_moves(self, position=None):
         """Returns a list of valid moves for a piece. """
         valid_moves = []
-        piece = self.get_piece_at(position)
+        piece = self[position]
         if not piece:
             return []
 
@@ -178,7 +154,7 @@ class Chessboard:
                 other_positions = Piece(
                     piece.color, "rook" if piece.type == "king" else "king").initial_positions
                 for other_pos in other_positions:
-                    other_piece = self.get_piece_at(other_pos)
+                    other_piece = self[other_pos]
                     if other_piece and not other_piece.has_moved:
                         # check if path is clear
                         if self.check_path(position, other_pos, castling=True):
@@ -194,13 +170,13 @@ class Chessboard:
                         if self.check_path(position, new_position):
                             valid_moves.append(new_position)
                     elif piece.type == "pawn":
-                        if not self.get_piece_at(new_position):
+                        if not self[new_position]:
                             valid_moves.append(new_position)
                         for capture in piece.valid_captures:
                             capture_position = (
                                 position[0] + capture[0], position[1] + capture[1])
                             if self.board_safe(position, capture_position):
-                                p = self.get_piece_at(capture_position)
+                                p = self[capture_position]
                                 if p and not piece.compare_color(p):
                                     valid_moves.append(capture_position)
 
@@ -210,7 +186,7 @@ class Chessboard:
                                 position[0] + move[0] * 2,
                                 position[1] + move[1] * 2)
                             if self.board_safe(position, new_position):
-                                if not self.get_piece_at(new_position):
+                                if not self[new_position]:
                                     valid_moves.append(new_position)
                     else:
                         valid_moves.append(new_position)
@@ -229,8 +205,8 @@ class Chessboard:
             return False
 
         # check if move is to an occupied square by same team
-        dest_piece = self.get_piece_at(new_position)
-        moving_piece = self.get_piece_at(position)
+        dest_piece = self[new_position]
+        moving_piece = self[position]
         if dest_piece and moving_piece and dest_piece.color == moving_piece.color:
             return False
 
@@ -259,8 +235,8 @@ class Chessboard:
                              (i + 1) * direction[1] // distance)
 
             # check if the space is occupied by a friendly piece
-            next_piece = self.get_piece_at(next_position)
-            moving_piece = self.get_piece_at(position)
+            next_piece = self[*next_position]
+            moving_piece = self[*position]
             if next_piece and moving_piece and next_piece.compare_color(moving_piece) and\
                     next_piece.type not in ["king", "rook"] and not castling:
                 return False
@@ -275,16 +251,12 @@ class Chessboard:
 
         return True
 
-    def get_piece_at(self, position):
-        """Returns the piece at a given position"""
-        return self.board[position[0]][position[1]]
-
     def move(self, position, new_position, update=False):
         """ Semi-unsafely moves a piece destroying any piece that is in the destination.
             This expects that the move is valid under chess rules. 
         """
-        piece = self.get_piece_at(position)
-        other = self.get_piece_at(new_position)
+        piece = self[*position]
+        other = self[*new_position]
 
         # lets quit before we do anything if there's no piece to move
         if not piece:
@@ -293,8 +265,8 @@ class Chessboard:
         # check if the move is a castle, this presumes that it's a valid castle. (semi-unsafe)
         if piece.type in ["king", "rook"]:
             if other and other.type in ["king", "rook"] and other.type != piece.type:
-                self.remove_piece(new_position)
-                self.remove_piece(position)
+                del self[*new_position]
+                del self[*position]
 
                 # castle the king and rook
                 # the rooks can be on either side of the king and 2 or 3 spaces away
@@ -342,21 +314,40 @@ class Chessboard:
                 vector = (new_position[0] - position[0],
                           new_position[1] - position[1])
                 if self.en_passant_available and new_position == self.en_passant_available and vector not in piece.valid_captures:
-                    self.remove_piece(self.en_passant_available)
+                    del self[self.en_passant_available]
                     # new position is actually behind the captured pawn
                     new_position = (self.en_passant_available[0] - 1 if piece.color ==
                                     "white" else self.en_passant_available[0] + 1, new_position[1])
                 self.en_passant_available = False
-        else:
-            if self.board[new_position[0]][new_position[1]]:
-                self.remove_piece(new_position)
 
+        del self[position]
+        self[new_position] = piece
         piece.has_moved = True
-        self.board[new_position[0]][new_position[1]] = piece
-        self.board[position[0]][position[1]] = None
-        self.update()
+
+        # self.update()
 
     # define index access to board
     def __getitem__(self, key):
         piece = self.board[key[0]][key[1]]
         return piece
+
+    def __delitem__(self, key):
+        """Removes a piece from the board"""
+        # find piece in active pieces
+        for real_position, piece in self._active_pieces.items():
+            if piece == key:
+                del self._active_pieces[real_position]
+                self._by_color[self[piece].color].remove(real_position)
+                break
+
+        self.board[key[0]][key[1]] = None
+
+    def __setitem__(self, key, value):
+        """Adds a piece to the board"""
+        # if already a piece there, remove it
+        if self[key]:
+            del self[key]
+
+        self.board[key[0]][key[1]] = value
+        self._active_pieces[value] = key
+        self._by_color[value.color].append(value)
