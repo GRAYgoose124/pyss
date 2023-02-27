@@ -16,8 +16,9 @@ class ChessApp(arcade.Window):
         super().__init__(width, height, "PγssChεss")
 
         # app setup
-        self._rotate = True
-        self._invert = True
+        self._rotate = False
+        self._invert = False
+
         self._depth_search = 2
 
         self._enable_stat_draw = True
@@ -55,13 +56,13 @@ class ChessApp(arcade.Window):
         # game
         self.play_board = Chessboard(initialize=False)
         self._turns_enabled = True
-        self._turn_count = 0
+        self._turn_count = 1
         self.turn = "white"
 
         self._score_updated = False
         self._score_updated_on = None
 
-    def setup(self, rotate=True, depth=0, enable_turns=True, stat_draw=True, board_config={"no_initial_pieces": False}):
+    def setup(self, rotate=False, depth=0, enable_turns=True, stat_draw=True, board_config={"no_initial_pieces": False}):
         self._rotate = rotate
         self._depth_search = depth - 1 if depth else self._depth_search
         self._turns_enabled = enable_turns
@@ -71,7 +72,7 @@ class ChessApp(arcade.Window):
         self._reset_depth_bins()
 
         self.turn = "white"
-        self._turn_count = 0
+        self._turn_count = 1
 
         # no_queens=True, no_knights=True, no_bishops=True)
         self.play_board.reset(**board_config)
@@ -179,11 +180,20 @@ class ChessApp(arcade.Window):
             # arcade.draw_text(chr(ord('a') + i), self.offset[0] + (i * self.tile_size + self.tile_size * .5),
             #                     self.offset[1] + self.board_size + 10, arcade.color.YELLOW, font_size=14)
             # append to drawlist using create_text_image instead
-            drawlist.append(arcade.create_text_sprite(str(i + 1), start_x=self.offset[0] - 20,
+            vertical = str(i + 1)
+            horizontal = chr(ord('a') + i)
+
+            if self._rotate:
+                horizontal, vertical = vertical, horizontal
+            if self._invert:
+                horizontal = str(8 - i)
+                vertical = chr(ord('h') - i)
+
+            drawlist.append(arcade.create_text_sprite(vertical, start_x=self.offset[0] - 20,
                                                       start_y=self.offset[1] + (
                                                           i * self.tile_size + self.tile_size * .5),
                                                       color=arcade.color.YELLOW, font_size=14))
-            drawlist.append(arcade.create_text_sprite(chr(ord('a') + i), start_x=self.offset[0] + (i * self.tile_size + self.tile_size * .5),
+            drawlist.append(arcade.create_text_sprite(horizontal, start_x=self.offset[0] + (i * self.tile_size + self.tile_size * .5),
                                                       start_y=self.offset[1] +
                                                       self.board_size + 5,
                                                       color=arcade.color.YELLOW, font_size=14))
@@ -239,8 +249,8 @@ class ChessApp(arcade.Window):
         arcade.draw_text(f"Last 10 Moves:", *last_move_offset,
                          FONT_COLOR, FONT_SIZE + 2)
         for i, move in enumerate(self.play_board.move_history[-10:]):
-            actual_turn = self._turn_count - len(self.play_board.move_history) + i + 1
-            arcade.draw_text(f"{actual_turn}:\t{move}", last_move_offset[0], last_move_offset[1] - (20 + i * 20), FONT_COLOR, FONT_SIZE)
+            actual_turn = self.play_board.move_history.index(move) + 1
+            arcade.draw_text(f"  {actual_turn}:\t{move}", last_move_offset[0], last_move_offset[1] - (20 + i * 20), FONT_COLOR, FONT_SIZE)
 
     def __draw_piece(self, i, j):
         """Draws the piece at the given position."""

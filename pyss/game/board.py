@@ -149,7 +149,7 @@ class Chessboard:
             # TODO: check for promotion
             # check for en passant, self.en_passant_available is the position of the pawn that can be captured
             if self.en_passant_available:
-                if self.en_passant_available[0] == position[0] and abs(self.en_passant_available[1] - position[1]) == 1:
+                if self.en_passant_available[1] == position[1] and abs(self.en_passant_available[0] - position[0]) == 1:
                     valid_moves.append(self.en_passant_available)
         elif piece.type in ["king", "rook"]:
             # check for castling by checking if king and rook have moved
@@ -256,7 +256,7 @@ class Chessboard:
         return True
     
     def __find_check(self, position):
-        """Returns true if the king at position is threatened"""
+        """Returns true if the king is threatened by position."""
         # get the piece at the position
         piece = self[position]
         # see if the piece can see a king
@@ -333,18 +333,19 @@ class Chessboard:
         if piece.type == "pawn":
             # TODO: check for promotions
             # Jump + En Passant
-            if abs(new_position[0] - position[0]) == 2 and position in piece.initial_positions:
+            if abs(new_position[1] - position[1]) == 2 and position in piece.initial_positions:
                 self.en_passant_available = new_position
             else:
                 # check if pawn is capturing en passant, en_passant_available is the position of the pawn that can be captured
                 vector = (new_position[0] - position[0],
                           new_position[1] - position[1])
+                logger.debug("Vector: ", vector, "Valid Captures: ", piece.valid_captures, "En Passant Available: ", self.en_passant_available)
                 if self.en_passant_available and new_position == self.en_passant_available and vector not in piece.valid_captures:
                     del self[self.en_passant_available]
                     en_passanted = True
                     # new position is actually behind the captured pawn
-                    new_position = (self.en_passant_available[0] - 1 if piece.color ==
-                                    "white" else self.en_passant_available[0] + 1, new_position[1])
+                    new_position = (new_position[0], self.en_passant_available[1] + 1 if piece.color ==
+                                    "white" else self.en_passant_available[1] - 1)
                 self.en_passant_available = False    
 
         # move the piece
@@ -358,10 +359,10 @@ class Chessboard:
 
         # check if king is threatened
         # This si not working, presumably because valid moves isn't correct.
-        check_position = self.__find_check(position)
+        check_position = self.__find_check(new_position)
         if check_position:
             self._check = check_position
-            if self.__find_checkmate(position):
+            if self.__find_checkmate(new_position):
                 self._checkmate = check_position
         else:
             self._check = None
