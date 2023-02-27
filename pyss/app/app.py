@@ -144,14 +144,14 @@ class ChessApp(arcade.Window):
         self.v_box = arcade.gui.UIBoxLayout(vertical=False)
         # stats button
         stat_button = arcade.gui.UIFlatButton(
-            text="\u2139", width=20, height=20, font_size=4)
+            text="\u2139", width=25, height=25, font_size=8)
         stat_button.on_click = lambda _: setattr(
             self, "_enable_stat_draw", not self._enable_stat_draw)
         self.v_box.add(stat_button.with_space_around(5))
 
         # new game button
         new_game_button = arcade.gui.UIFlatButton(
-            text="\u21BB", width=20, height=20, font_size=4)
+            text="\u21BB", width=25, height=25, font_size=8)
         new_game_button.on_click = lambda _: self.setup()
         # self.v_box.add(new_game_button.with_space_around(5))
         # add next to previous button instead of above
@@ -178,9 +178,9 @@ class ChessApp(arcade.Window):
         for i in range(8):
             for j in range(8):                
                 if (i + j) % 2 == check:
-                    tile = create_tile(arcade.color.BLACK, i, j)
+                    tile = create_tile(arcade.color.DARK_BROWN, i, j)
                 else:
-                    tile = create_tile(arcade.color.WHITE, i, j)
+                    tile = create_tile(arcade.color.LIGHT_BROWN, i, j)
 
                 board.append(tile)
 
@@ -215,7 +215,7 @@ class ChessApp(arcade.Window):
     
     def __draw_stats(self):
         """Draws the stats of the game."""
-        FONT_SIZE = 8
+        FONT_SIZE = 12
         FONT_COLOR = arcade.color.RED
 
         # stats is middle right of the screen
@@ -231,7 +231,7 @@ class ChessApp(arcade.Window):
             text_offset = stats_offset[0] - \
                 box_size[0] // 4, stats_offset[1] + box_size[1] // 2 - 10
             arcade.draw_text(f"Turn {self._turn_count}: {self.turn}", *text_offset, FONT_COLOR, FONT_SIZE, width=100, align="center",
-                             anchor_x="center", anchor_y="center", font_name=("Lucida Console",))
+                             anchor_x="center", anchor_y="center")
 
         # update score if turn has changed
         if self.turn != self._score_updated_on:
@@ -243,7 +243,7 @@ class ChessApp(arcade.Window):
         score_offset = stats_offset[0] - \
             box_size[0] // 4, stats_offset[1] - box_size[1] // 2 + 10
         arcade.draw_text(f"Score: {self._score_updated}", *score_offset, FONT_COLOR, FONT_SIZE, width=100, align="center",
-                            anchor_x="center", anchor_y="center", font_name=("Lucida Console",))
+                            anchor_x="center", anchor_y="center")
 
         # active pieces count
         # arcade.draw_text(f"White: {len(self.play_board._by_color['white'])}", 10, 50, FONT_COLOR, FONT_SIZE)
