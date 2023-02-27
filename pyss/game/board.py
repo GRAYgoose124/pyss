@@ -298,23 +298,23 @@ class Chessboard:
                 # the right rook will end up on file 5 and the left on file 3
                 # the king will move +2 or -2 spaces
                 # left rook
-                if position[1] == 7:
-                    other_position = (position[0], 5)
-                    piece_position = (position[0], 4)
+                if position[0] == 7:
+                    other_position = (5, position[1])
+                    piece_position = (4, position[1])
                 # right rook
-                elif position[1] == 0:
-                    other_position = (position[0], 1)
-                    piece_position = (position[0], 2)
+                elif position[0] == 0:
+                    other_position = (1, position[1])
+                    piece_position = (2, position[1])
                 # king
                 else:
                     # moving right
-                    if position[1] < new_position[1]:
-                        other_position = (position[0], 4)
-                        piece_position = (position[0], 5)
+                    if position[0] < new_position[0]:
+                        other_position = (4, position[1])
+                        piece_position = (5, position[1])
                     # moving left
                     else:
-                        other_position = (position[0], 2)
-                        piece_position = (position[0], 1)
+                        other_position = (2, position[1])
+                        piece_position = (1, position[1])
 
                 self[other_position] = other
                 self[piece_position] = piece
