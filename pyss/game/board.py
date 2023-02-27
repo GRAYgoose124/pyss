@@ -330,6 +330,7 @@ class Chessboard:
         if other:
             capture = True        
 
+        # move the piece
         del self[position]
         self[new_position] = piece
         piece.has_moved = True
@@ -349,6 +350,7 @@ class Chessboard:
         piece = self[position]
         # see if the piece can see a king
         if piece:
+            # TODO: if this is done from app we can use a list of precached moves.
             for move in self.valid_moves(position):
                 next_piece = self[move]
                 if next_piece and next_piece.type == "king" and not next_piece.compare_color(piece):
@@ -357,6 +359,7 @@ class Chessboard:
         return False
     
     def __find_checkmate(self, position):
+        # if king has no valid moves, it's checkmate
         return False
     
     # define index access to board

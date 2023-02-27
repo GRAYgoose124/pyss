@@ -22,13 +22,13 @@ class ChessApp(arcade.Window):
 
         self._enable_stat_draw = True
 
-        # display config
+            # display config
         self.tile_size = (min(width, height) - 50) // 8
         self.board_size = self.tile_size * 8
         self.offset = (
             self.width - self.board_size) // 2, (self.height - self.board_size) // 2
-
-        # textures
+        
+            # textures
         root = os.path.dirname(os.path.realpath(__file__))
         self._black_placeholder_texture = arcade.load_texture(
             os.path.join(root, "assets/black.png"))
@@ -36,11 +36,11 @@ class ChessApp(arcade.Window):
         self._display_board = self.__create_board()
         self._rank_and_file_texture = self.__create_rank_and_file()
 
-        # selection
+            # selection
         self._selected_piece = None
         self._old_selected_piece = None
         self._selected_valid_moves = []
-        # depth selection
+                # depth selection
         self._depth_bins = {}
         self._depth_drawlists = {}
         self._selected_depth_bins = None
@@ -51,7 +51,7 @@ class ChessApp(arcade.Window):
         self.v_manager = arcade.gui.UIManager()
         self.v_manager.enable()
         self.__create_gui()
-
+  
         # game
         self.play_board = Chessboard(initialize=False)
         self._turns_enabled = True
@@ -183,9 +183,9 @@ class ChessApp(arcade.Window):
                                                       start_y=self.offset[1] +
                                                       self.board_size + 5,
                                                       color=arcade.color.YELLOW, font_size=14))
-
+        
         return drawlist
-
+    
     def __draw_stats(self):
         """Draws the stats of the game."""
         FONT_SIZE = 8
@@ -216,7 +216,7 @@ class ChessApp(arcade.Window):
         score_offset = stats_offset[0] - \
             box_size[0] // 4, stats_offset[1] - box_size[1] // 2 + 10
         arcade.draw_text(f"Score: {self._score_updated}", *score_offset, FONT_COLOR, FONT_SIZE, width=100, align="center",
-                         anchor_x="center", anchor_y="center", font_name=("Lucida Console",))
+                            anchor_x="center", anchor_y="center", font_name=("Lucida Console",))
 
         # active pieces count
         # arcade.draw_text(f"White: {len(self.play_board._by_color['white'])}", 10, 50, FONT_COLOR, FONT_SIZE)
@@ -401,13 +401,18 @@ class ChessApp(arcade.Window):
         """Select a piece, or deselect if already selected."""
         selection = self.play_board[i, j]
 
-        # deselect/block selection if not our turn
-        if selection and self._turns_enabled and selection.color != self.turn:
-            self._reset_selection()
-            return
-
         if selection:
-          # toggle selection
+            # deselect/block selection if not our turn
+            if self._turns_enabled and selection.color != self.turn:
+                self._reset_selection()
+                return
+            
+            # only king can move if check
+            if self.play_board._check and selection.type != 'king':
+                self._reset_selection()
+                return
+
+            # toggle selection
             if self._selected_piece == (i, j):
                 self._reset_selection()
                 return
@@ -456,12 +461,3 @@ class ChessApp(arcade.Window):
                     self.turn = "black" if self.turn == "white" else "white"
 
                 return True
-
-    def __handle_stats_button(self):
-        """Handle the stats button."""
-        if self._stats_enabled:
-            self._stats_enabled = False
-            self._stats_button.text = "Stats"
-        else:
-            self._stats_enabled = True
-            self._stats_button.text = "Hide Stats"
