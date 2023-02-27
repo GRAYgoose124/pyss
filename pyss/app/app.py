@@ -58,9 +58,6 @@ class ChessApp(arcade.Window):
         self._turn_count = 0
         self.turn = "white"
 
-        self._check = None
-        self._checkmate = None
-
         self._score_updated = False
         self._score_updated_on = None
 
@@ -71,8 +68,6 @@ class ChessApp(arcade.Window):
         self._enable_stat_draw = stat_draw
         self.turn = "white"
         self._turn_count = 0
-        self._check = None
-        self._checkmate = None
 
         # no_queens=True, no_knights=True, no_bishops=True)
         self.play_board.reset(**board_config)
@@ -240,8 +235,8 @@ class ChessApp(arcade.Window):
         arcade.draw_text(f"Last 10 Moves:", *last_move_offset,
                          FONT_COLOR, FONT_SIZE + 2)
         for i, move in enumerate(self.play_board.move_history[-10:]):
-            arcade.draw_text(
-                f"{i}:\t{move}", last_move_offset[0], last_move_offset[1] - (20 + i * 20), FONT_COLOR, FONT_SIZE)
+            actual_turn = self._turn_count - len(self.play_board.move_history) + i + 1
+            arcade.draw_text(f"{actual_turn}:\t{move}", last_move_offset[0], last_move_offset[1] - (20 + i * 20), FONT_COLOR, FONT_SIZE)
 
     def __draw_piece(self, i, j):
         """Draws the piece at the given position."""
@@ -254,11 +249,9 @@ class ChessApp(arcade.Window):
             color = arcade.color.BLACK
 
         arcade.draw_text(self.play_board[i, j].unicode,
-                         self.offset[1] +
-                         (ix * self.tile_size + self.tile_size * .5),
-                         self.offset[0] +
-                         (jx * self.tile_size + self.tile_size * .5),
-                         color, font_size=self.tile_size // 2, anchor_x="center", anchor_y="center")
+                            self.offset[0] + (ix * self.tile_size + self.tile_size * 0.5),
+                            self.offset[1] + (jx * self.tile_size + self.tile_size * 0.5),
+                            color, self.tile_size * .5, width=self.tile_size, align="center", anchor_x="center", anchor_y="center")
 
     def __draw_pieces(self):
         """Draws the pieces on the board."""
@@ -268,10 +261,12 @@ class ChessApp(arcade.Window):
                     if self._selected_piece == (i, j):
                         ix, jx = self.transform(i, j)
 
-                        arcade.draw_rectangle_outline(self.offset[0] + (ix * self.tile_size + self.tile_size * 0.5),
-                                                      self.offset[1] + (
-                            jx * self.tile_size + self.tile_size * 0.5),
-                            self.tile_size, self.tile_size, arcade.color.RED, 2)
+                        arcade.draw_rectangle_outline(
+                            self.offset[0] + (ix * self.tile_size + self.tile_size * 0.5),
+                            self.offset[1] + (jx * self.tile_size + self.tile_size * 0.5),
+                            self.tile_size, self.tile_size, arcade.color.RED, 2
+                        )
+                        
                     self.__draw_piece(i, j)
 
     def __create_moves_list(
@@ -413,7 +408,7 @@ class ChessApp(arcade.Window):
                 return
             
             # only king can move if check
-            if self._check and selection.type != 'king':
+            if self.play_board._check and selection.type != 'king':
                 self._reset_selection()
                 return
 
@@ -437,24 +432,6 @@ class ChessApp(arcade.Window):
                     self._selected_piece)
         else:
             self._reset_selection()
-
-    def __find_check(self, position):
-        """Returns true if the king at position is threatened"""
-        # get the piece at the position
-        piece = self.play_board[position]
-        # see if the piece can see a king
-        if piece:
-            # TODO: use _selected_valid_moves instead of valid_moves
-            for move in self.play_board.valid_moves(position):
-                next_piece = self.play_board[move]
-                if next_piece and next_piece.type == "king" and not next_piece.compare_color(piece):
-                    return move
-
-        return False
-    
-    def __find_checkmate(self, position):
-        # if king has no valid moves, it's checkmate
-        return False
     
     def __make_valid_move_handler(self, i, j):
         """Make a valid move."""
@@ -483,19 +460,5 @@ class ChessApp(arcade.Window):
                 if self._turns_enabled:
                     self._turn_count += 1
                     self.turn = "black" if self.turn == "white" else "white"
-
-                # check if king is threatened
-                check_position = self.__find_check((i, j))
-                if check_position:
-                    self._check = check_position
-                    if self.__find_checkmate((i, j)):
-                        self._checkmate = check_position
-                        self.play_board.move_history[-1] += "#"
-                    else:
-                        self.play_board.move_history[-1] += "+"
-
-                else:
-                    self._check = None
-                    self._checkmate = None
 
                 return True

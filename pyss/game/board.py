@@ -26,6 +26,9 @@ class Chessboard:
         self._active_pieces = None
         self._by_color = None
 
+        self._check = None
+        self._checkmate = None
+
         if initialize:
             self.reset()
 
@@ -86,6 +89,9 @@ class Chessboard:
         """Resets the board to its initial state"""
         self.move_history = []
         self.en_passant_available = False
+
+        self._check = None
+        self._checkmate = None
         
         self.board = Chessboard.initialize(**kwargs)
         self.__init_active_pieces()
@@ -248,15 +254,31 @@ class Chessboard:
                 return False
 
         return True
+    
+    def __find_check(self, position):
+        """Returns true if the king at position is threatened"""
+        # get the piece at the position
+        piece = self[position]
+        # see if the piece can see a king
+        if piece:
+            # TODO: use _selected_valid_moves instead of valid_moves
+            for move in self.valid_moves(position):
+                next_piece = self[move]
+                if next_piece and next_piece.type == "king" and not next_piece.compare_color(piece):
+                    return move
 
+        return False
+    
+    def __find_checkmate(self, position):
+        # if king has no valid moves, it's checkmate
+        return False
+    
     def move(self, position, new_position, update=False):
         """ Semi-unsafely moves a piece destroying any piece that is in the destination.
             This expects that the move is valid under chess rules. 
         """
         en_passanted = False
         capture = False
-
-
 
         piece = self[*position]
         other = self[*new_position]
@@ -294,8 +316,9 @@ class Chessboard:
                         other_position = (position[0], 2)
                         piece_position = (position[0], 1)
 
-                self.add_piece(other, other_position)
-                self.add_piece(piece, piece_position)
+                self[other_position] = other
+                self[piece_position] = piece
+
                 return
 
         # if king, you cannot take, only check and checkmate
@@ -322,18 +345,33 @@ class Chessboard:
                     # new position is actually behind the captured pawn
                     new_position = (self.en_passant_available[0] - 1 if piece.color ==
                                     "white" else self.en_passant_available[0] + 1, new_position[1])
-                self.en_passant_available = False
-
-        if other:
-            capture = True        
+                self.en_passant_available = False    
 
         # move the piece
         del self[position]
         self[new_position] = piece
         piece.has_moved = True
+
+        # check if the move is a capture
+        if other:
+            capture = True    
+
+        # check if king is threatened
+        # This si not working, presumably because valid moves isn't correct.
+        check_position = self.__find_check(position)
+        if check_position:
+            self._check = check_position
+            if self.__find_checkmate(position):
+                self._checkmate = check_position
+        else:
+            self._check = None
+            self._checkmate = None
+
         # TODO: to append check/checkmate it must be checked here...
         self.move_history.append(generate_notation(
-            piece.type, piece.notation, position, new_position, capture=capture, en_passant=en_passanted))
+            piece.type, piece.notation, position, new_position, capture=capture, 
+            en_passant=en_passanted, check=self._check, checkmate=self._checkmate)
+        )
         
     # define index access to board
     def __getitem__(self, key):

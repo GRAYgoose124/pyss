@@ -7,19 +7,27 @@ from .app import ChessApp
 
 def argparser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--depth", type=int, default=3,
-                        help="Visual depth")
-    parser.add_argument("-dt", "--disable-turns", action="store_true", default=False,
-                        help="Disable turns")
-    parser.add_argument("-ds", "--disable-stats", action="store_true", default=False,
-                        help="Disable stats")
+
+
+    # sub parser for app config
+    app_cfg_parser = parser.add_argument_group("App Config")
+    # logging level
+    app_cfg_parser.add_argument("-l", "--log-level", type=str, default="INFO",
+                        help="Logging level", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
 
     # window size
-    parser.add_argument("-wi", "--width", type=int, default=800,
+    app_cfg_parser.add_argument("-wi", "--width", type=int, default=1200,
                         help="Window width")
-    parser.add_argument("-hi", "--height", type=int, default=800,
+    app_cfg_parser.add_argument("-hi", "--height", type=int, default=800,
                         help="Window height")
-
+    
+    app_cfg_parser.add_argument("-d", "--depth", type=int, default=3,
+                        help="Visual depth")
+    app_cfg_parser.add_argument("-dt", "--disable-turns", action="store_true", default=False,
+                        help="Disable turns")
+    app_cfg_parser.add_argument("-ds", "--disable-stats", action="store_true", default=False,
+                        help="Disable stats")
+    
     # subparser to set board config with flags
     board_cfg_parser = parser.add_argument_group("Board Config")
     board_cfg_parser.add_argument("-nk", "--no-knights", action="store_true", default=False,
@@ -43,16 +51,21 @@ def argparser():
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG,
-                        format="[%(levelname)s] %(name)s | %(message)s")
-    logging.getLogger("arcade").setLevel(logging.INFO)
-
     args = argparser().parse_args()
 
+    logging.basicConfig(level=args.log_level,
+                        format="[%(levelname)s] %(name)s | %(message)s")
+
+    logging.getLogger("arcade").setLevel(logging.WARNING)
+    logging.getLogger("PIL").setLevel(logging.WARNING)
+
+
     default_board_cfg = {"no_initial_pieces": False}
+    default_board_cfg["interlace_pawns"] = args.interlace_pawns
     for arg in vars(args):
         if arg.startswith("no_"):
             default_board_cfg[arg] = getattr(args, arg)
+    
 
     app = ChessApp(width=args.width, height=args.height)
     app.setup(depth=args.depth, stat_draw=not args.disable_stats, enable_turns=not args.disable_turns,

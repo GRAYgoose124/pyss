@@ -38,7 +38,7 @@ def notation_to_position(notation: str):
     return (get_rank(notation), ord(notation[0]) - ord('a'))
 
 
-def move_piece_notation(piece_note, position, move, capture=False):
+def move_piece_notation(piece_note, position, move, capture=False, check=False, checkmate=False):
     """Returns the notation of a piece moving to a given position
 
     Args:
@@ -50,7 +50,13 @@ def move_piece_notation(piece_note, position, move, capture=False):
     Returns:
         (str): The notation of the move
     """
-    return f"{piece_note}{'x' if capture else ''}{position_to_notation(position)}-{position_to_notation(move)}"
+    check_or_checkmate = ""
+    if checkmate:
+        check_or_checkmate = "#"
+    elif check:
+        check_or_checkmate = "+"
+        
+    return f"{piece_note}{'x' if capture else ''}{position_to_notation(position)}-{position_to_notation(move)}{check_or_checkmate}"
 
 
 def generate_notation(piece_type, piece_note, position,
