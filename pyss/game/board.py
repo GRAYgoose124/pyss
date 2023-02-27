@@ -22,6 +22,7 @@ class Chessboard:
         self.en_passant_available = False
         self.board = None
         self._check = None
+        self._checkmate = None
         self.move_history = []
 
         self._active_pieces = None
@@ -185,7 +186,7 @@ class Chessboard:
                             new_position = (
                                 position[0] + move[0] * 2,
                                 position[1] + move[1] * 2)
-                            if self.board_safe(position, new_position):
+                            if self.check_path(position, new_position):
                                 if not self[new_position]:
                                     valid_moves.append(new_position)
                     else:
@@ -258,6 +259,8 @@ class Chessboard:
         en_passanted = False
         capture = False
 
+
+
         piece = self[*position]
         other = self[*new_position]
 
@@ -325,14 +328,37 @@ class Chessboard:
                 self.en_passant_available = False
 
         if other:
-            capture = True
+            capture = True        
 
         del self[position]
         self[new_position] = piece
         piece.has_moved = True
         self.move_history.append(generate_notation(
             piece.type, piece.notation, position, new_position, capture=capture, en_passant=en_passanted))
+        
+        # look for checks and checkmates by seeing if a king is threatened
+        check_position = self.__find_check(new_position)
+        if check_position:
+            self._check = check_position
+            if self.__find_checkmate(new_position):
+                self._checkmate = check_position
+    
+    def __find_check(self, position):
+        """Returns true if the king at position is threatened"""
+        # get the piece at the position
+        piece = self[position]
+        # see if the piece can see a king
+        if piece:
+            for move in self.valid_moves(position):
+                next_piece = self[move]
+                if next_piece and next_piece.type == "king" and not next_piece.compare_color(piece):
+                    return move
 
+        return False
+    
+    def __find_checkmate(self, position):
+        return False
+    
     # define index access to board
     def __getitem__(self, key):
         """Returns the piece at a position on the board"""
