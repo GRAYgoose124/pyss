@@ -58,6 +58,9 @@ class ChessApp(arcade.Window):
         self._turn_count = 0
         self.turn = "white"
 
+        self._check = None
+        self._checkmate = None
+
         self._score_updated = False
         self._score_updated_on = None
 
@@ -68,6 +71,8 @@ class ChessApp(arcade.Window):
         self._enable_stat_draw = stat_draw
         self.turn = "white"
         self._turn_count = 0
+        self._check = None
+        self._checkmate = None
 
         # no_queens=True, no_knights=True, no_bishops=True)
         self.play_board.reset(**board_config)
@@ -232,11 +237,11 @@ class ChessApp(arcade.Window):
         # move history
         last_move_offset = stats_offset[0] - \
             box_size[0] // 3, stats_offset[1] + box_size[1] // 2 - 40
-        arcade.draw_text(f"Last 5 Moves:", *last_move_offset,
+        arcade.draw_text(f"Last 10 Moves:", *last_move_offset,
                          FONT_COLOR, FONT_SIZE + 2)
-        for i, move in enumerate(self.play_board.move_history[-5:]):
+        for i, move in enumerate(self.play_board.move_history[-10:]):
             arcade.draw_text(
-                f"\t{move}", last_move_offset[0], last_move_offset[1] - (20 + i * 20), FONT_COLOR, FONT_SIZE)
+                f"{i}:\t{move}", last_move_offset[0], last_move_offset[1] - (20 + i * 20), FONT_COLOR, FONT_SIZE)
 
     def __draw_piece(self, i, j):
         """Draws the piece at the given position."""
@@ -408,7 +413,7 @@ class ChessApp(arcade.Window):
                 return
             
             # only king can move if check
-            if self.play_board._check and selection.type != 'king':
+            if self._check and selection.type != 'king':
                 self._reset_selection()
                 return
 
@@ -433,6 +438,24 @@ class ChessApp(arcade.Window):
         else:
             self._reset_selection()
 
+    def __find_check(self, position):
+        """Returns true if the king at position is threatened"""
+        # get the piece at the position
+        piece = self.play_board[position]
+        # see if the piece can see a king
+        if piece:
+            # TODO: use _selected_valid_moves instead of valid_moves
+            for move in self.play_board.valid_moves(position):
+                next_piece = self.play_board[move]
+                if next_piece and next_piece.type == "king" and not next_piece.compare_color(piece):
+                    return move
+
+        return False
+    
+    def __find_checkmate(self, position):
+        # if king has no valid moves, it's checkmate
+        return False
+    
     def __make_valid_move_handler(self, i, j):
         """Make a valid move."""
         # check if any valid moves are ready
@@ -450,6 +473,7 @@ class ChessApp(arcade.Window):
             # king check is a hack because for some reason selecting it swaps the turn - probably because you can't capture it
             if other and other.type == "king" and other.color != self.turn:
                 return False
+            
             if (i, j) != self._selected_piece:
                 self.play_board.move(self._selected_piece, (i, j), update=True)
                 # self._update_depth_bins([self.selected_piece, (i, j)])
@@ -459,5 +483,19 @@ class ChessApp(arcade.Window):
                 if self._turns_enabled:
                     self._turn_count += 1
                     self.turn = "black" if self.turn == "white" else "white"
+
+                # check if king is threatened
+                check_position = self.__find_check((i, j))
+                if check_position:
+                    self._check = check_position
+                    if self.__find_checkmate((i, j)):
+                        self._checkmate = check_position
+                        self.play_board.move_history[-1] += "#"
+                    else:
+                        self.play_board.move_history[-1] += "+"
+
+                else:
+                    self._check = None
+                    self._checkmate = None
 
                 return True

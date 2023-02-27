@@ -21,8 +21,6 @@ class Chessboard:
     def __init__(self, initialize=True):
         self.en_passant_available = False
         self.board = None
-        self._check = None
-        self._checkmate = None
         self.move_history = []
 
         self._active_pieces = None
@@ -88,8 +86,7 @@ class Chessboard:
         """Resets the board to its initial state"""
         self.move_history = []
         self.en_passant_available = False
-        self._check = None
-
+        
         self.board = Chessboard.initialize(**kwargs)
         self.__init_active_pieces()
 
@@ -334,34 +331,10 @@ class Chessboard:
         del self[position]
         self[new_position] = piece
         piece.has_moved = True
+        # TODO: to append check/checkmate it must be checked here...
         self.move_history.append(generate_notation(
             piece.type, piece.notation, position, new_position, capture=capture, en_passant=en_passanted))
         
-        # look for checks and checkmates by seeing if a king is threatened
-        check_position = self.__find_check(new_position)
-        if check_position:
-            self._check = check_position
-            if self.__find_checkmate(new_position):
-                self._checkmate = check_position
-    
-    def __find_check(self, position):
-        """Returns true if the king at position is threatened"""
-        # get the piece at the position
-        piece = self[position]
-        # see if the piece can see a king
-        if piece:
-            # TODO: if this is done from app we can use a list of precached moves.
-            for move in self.valid_moves(position):
-                next_piece = self[move]
-                if next_piece and next_piece.type == "king" and not next_piece.compare_color(piece):
-                    return move
-
-        return False
-    
-    def __find_checkmate(self, position):
-        # if king has no valid moves, it's checkmate
-        return False
-    
     # define index access to board
     def __getitem__(self, key):
         """Returns the piece at a position on the board"""

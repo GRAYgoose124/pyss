@@ -1,1 +1,4 @@
 - What if instead of discarding depth lists on move, we pruned the depth lists at the two changed positions and updated them for all existing depth lists? Theoretically after a few turns of caching this would lead to pretty performant gameplay even with `depth >= 5`.
+- pawn promotion
+- castling blocked by enemy line of sight
+- check/checkmate
