@@ -4,7 +4,7 @@ import arcade.gui
 import logging
 
 from pyss.app.utils import DEPTH_COLOR_PALETTE
-
+from pyss.app.draw_piece import create_bishop_shape, create_queen_shape, create_rook_shape, load_pieces
 from ..game.board import Chessboard
 
 
@@ -62,6 +62,8 @@ class ChessApp(arcade.Window):
         self._score_updated = False
         self._score_updated_on = None
 
+        self._piece_textures = load_pieces()
+
     def setup(self, invert=None, rotate=None, depth=0, enable_turns=True, stat_draw=True, board_config={"no_initial_pieces": False}):
         if rotate is not None:
             self._rotate = rotate
@@ -96,7 +98,6 @@ class ChessApp(arcade.Window):
 
         if self._enable_stat_draw:
             self.__draw_stats()
-
 
 
     def update(self, delta_time):
@@ -143,14 +144,14 @@ class ChessApp(arcade.Window):
         self.v_box = arcade.gui.UIBoxLayout(vertical=False)
         # stats button
         stat_button = arcade.gui.UIFlatButton(
-            text="\u2139", width=20, height=20, font_size=4)
+            text="\u2139", width=25, height=25, font_size=8)
         stat_button.on_click = lambda _: setattr(
             self, "_enable_stat_draw", not self._enable_stat_draw)
         self.v_box.add(stat_button.with_space_around(5))
 
         # new game button
         new_game_button = arcade.gui.UIFlatButton(
-            text="\u21BB", width=20, height=20, font_size=4)
+            text="\u21BB", width=25, height=25, font_size=8)
         new_game_button.on_click = lambda _: self.setup()
         # self.v_box.add(new_game_button.with_space_around(5))
         # add next to previous button instead of above
@@ -177,9 +178,9 @@ class ChessApp(arcade.Window):
         for i in range(8):
             for j in range(8):                
                 if (i + j) % 2 == check:
-                    tile = create_tile(arcade.color.BLACK, i, j)
+                    tile = create_tile(arcade.color.DARK_BROWN, i, j)
                 else:
-                    tile = create_tile(arcade.color.WHITE, i, j)
+                    tile = create_tile(arcade.color.LIGHT_BROWN, i, j)
 
                 board.append(tile)
 
@@ -214,7 +215,7 @@ class ChessApp(arcade.Window):
     
     def __draw_stats(self):
         """Draws the stats of the game."""
-        FONT_SIZE = 8
+        FONT_SIZE = 12
         FONT_COLOR = arcade.color.RED
 
         # stats is middle right of the screen
@@ -230,7 +231,7 @@ class ChessApp(arcade.Window):
             text_offset = stats_offset[0] - \
                 box_size[0] // 4, stats_offset[1] + box_size[1] // 2 - 10
             arcade.draw_text(f"Turn {self._turn_count}: {self.turn}", *text_offset, FONT_COLOR, FONT_SIZE, width=100, align="center",
-                             anchor_x="center", anchor_y="center", font_name=("Lucida Console",))
+                             anchor_x="center", anchor_y="center")
 
         # update score if turn has changed
         if self.turn != self._score_updated_on:
@@ -242,7 +243,7 @@ class ChessApp(arcade.Window):
         score_offset = stats_offset[0] - \
             box_size[0] // 4, stats_offset[1] - box_size[1] // 2 + 10
         arcade.draw_text(f"Score: {self._score_updated}", *score_offset, FONT_COLOR, FONT_SIZE, width=100, align="center",
-                            anchor_x="center", anchor_y="center", font_name=("Lucida Console",))
+                            anchor_x="center", anchor_y="center")
 
         # active pieces count
         # arcade.draw_text(f"White: {len(self.play_board._by_color['white'])}", 10, 50, FONT_COLOR, FONT_SIZE)
@@ -281,10 +282,16 @@ class ChessApp(arcade.Window):
         else:
             color = arcade.color.BLACK
 
-        arcade.draw_text(self.play_board[i, j].unicode,
-                            self.offset[0] + (ix * self.tile_size + self.tile_size * 0.5),
-                            self.offset[1] + (jx * self.tile_size + self.tile_size * 0.5),
-                            color, self.tile_size * .5, width=self.tile_size, align="center", anchor_x="center", anchor_y="center")
+        # arcade.draw_text(self.play_board[i, j].unicode,
+        #                     self.offset[0] + (ix * self.tile_size + self.tile_size * 0.5),
+        #                     self.offset[1] + (jx * self.tile_size + self.tile_size * 0.5),
+        #                     color, self.tile_size * .5, width=self.tile_size, align="center", anchor_x="center", anchor_y="center")
+        piece = self.play_board[i, j]
+        tex = self._piece_textures[piece.color][piece.type]
+        tex.set_position(self.offset[0] + (i * self.tile_size + self.tile_size * 0.5),
+                    self.offset[1] + (j * self.tile_size + self.tile_size * 0.5))
+        tex.scale = self.tile_size / 170
+        tex.draw()
 
     def __draw_pieces(self):
         """Draws the pieces on the board."""
