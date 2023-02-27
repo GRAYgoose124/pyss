@@ -239,8 +239,8 @@ class Chessboard:
                              (i + 1) * direction[1] // distance)
 
             # check if the space is occupied by a friendly piece
-            next_piece = self[*next_position]
-            moving_piece = self[*position]
+            next_piece = self[next_position]
+            moving_piece = self[position]
             if next_piece and moving_piece and next_piece.compare_color(moving_piece) and\
                     next_piece.type not in ["king", "rook"] and not castling:
                 return False
@@ -280,8 +280,8 @@ class Chessboard:
         en_passanted = False
         capture = False
 
-        piece = self[*position]
-        other = self[*new_position]
+        piece = self[position]
+        other = self[new_position]
 
         # lets quit before we do anything if there's no piece to move
         if not piece:
@@ -290,8 +290,8 @@ class Chessboard:
         # check if the move is a castle, this presumes that it's a valid castle. (semi-unsafe)
         if piece.type in ["king", "rook"]:
             if other and other.type in ["king", "rook"] and other.type != piece.type:
-                del self[*new_position]
-                del self[*position]
+                del self[new_position]
+                del self[position]
 
                 # castle the king and rook
                 # the rooks can be on either side of the king and 2 or 3 spaces away
