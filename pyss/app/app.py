@@ -34,8 +34,8 @@ class ChessApp(arcade.Window):
         self._black_placeholder_texture = arcade.load_texture(
             os.path.join(root, "assets/black.png"))
 
-        self._display_board = self.__create_board()
-        self._rank_and_file_texture = self.__create_rank_and_file()
+        self._display_board = None
+        self._rank_and_file_texture = None
 
             # selection
         self._selected_piece = None
@@ -62,8 +62,16 @@ class ChessApp(arcade.Window):
         self._score_updated = False
         self._score_updated_on = None
 
-    def setup(self, rotate=False, depth=0, enable_turns=True, stat_draw=True, board_config={"no_initial_pieces": False}):
-        self._rotate = rotate
+    def setup(self, invert=None, rotate=None, depth=0, enable_turns=True, stat_draw=True, board_config={"no_initial_pieces": False}):
+        if rotate is not None:
+            self._rotate = rotate
+        if invert is not None:
+            self._invert = invert
+
+        if rotate or invert or self._display_board is None or self._rank_and_file_texture is None:
+            self._display_board = self.__create_board()
+            self._rank_and_file_texture = self.__create_rank_and_file()
+
         self._depth_search = depth - 1 if depth else self._depth_search
         self._turns_enabled = enable_turns
         self._enable_stat_draw = stat_draw
@@ -74,21 +82,22 @@ class ChessApp(arcade.Window):
         self.turn = "white"
         self._turn_count = 1
 
-        # no_queens=True, no_knights=True, no_bishops=True)
         self.play_board.reset(**board_config)
 
     def on_draw(self):
         self.clear()
         self._display_board.draw()
+        self._rank_and_file_texture.draw()
+        
         self.__draw_pieces()
         self.__draw_valid_moves()
 
-        self.v_manager.draw()
+        self.v_manager.draw() # TODO: use this instead of __draw_stats()
 
         if self._enable_stat_draw:
             self.__draw_stats()
 
-        self._rank_and_file_texture.draw()
+
 
     def update(self, delta_time):
         if delta_time < 1 / 30:
@@ -158,9 +167,16 @@ class ChessApp(arcade.Window):
                                                                             self.offset[1] + (
                                                                                 j * self.tile_size + self.tile_size * 0.5),
                                                                             self.tile_size, self.tile_size, color)
+        check = 0
+        if self._rotate:
+            check = 1
+
+        if self._invert:
+            check = 1 - check
+
         for i in range(8):
-            for j in range(8):
-                if (i + j) % 2 == 0:
+            for j in range(8):                
+                if (i + j) % 2 == check:
                     tile = create_tile(arcade.color.BLACK, i, j)
                 else:
                     tile = create_tile(arcade.color.WHITE, i, j)
@@ -174,20 +190,16 @@ class ChessApp(arcade.Window):
         drawlist = arcade.SpriteList()
 
         for i in range(8):
-            # arcade.draw_text(str(i + 1), self.offset[0] - 15, self.offset[1] + (i * self.tile_size + self.tile_size * .5),
-            #                  arcade.color.YELLOW, font_size=14, anchor_x="center", anchor_y="center")
-            # # draw file at top of board
-            # arcade.draw_text(chr(ord('a') + i), self.offset[0] + (i * self.tile_size + self.tile_size * .5),
-            #                     self.offset[1] + self.board_size + 10, arcade.color.YELLOW, font_size=14)
-            # append to drawlist using create_text_image instead
             vertical = str(i + 1)
             horizontal = chr(ord('a') + i)
 
+            if self._invert:
+                vertical = str(8 - i)
+                horizontal = chr(ord('h') - i)
+
             if self._rotate:
                 horizontal, vertical = vertical, horizontal
-            if self._invert:
-                horizontal = str(8 - i)
-                vertical = chr(ord('h') - i)
+
 
             drawlist.append(arcade.create_text_sprite(vertical, start_x=self.offset[0] - 20,
                                                       start_y=self.offset[1] + (
@@ -257,7 +269,14 @@ class ChessApp(arcade.Window):
         # rotate visual i, j 90 degrees clockwise
         ix, jx = self.transform(i, j)
 
-        if (ix + jx) % 2 == 0:
+        check = 0
+        if self._rotate:
+            check = 1
+
+        if self._invert:
+            check = 1 - check
+
+        if (ix + jx) % 2 == check:
             color = arcade.color.WHITE
         else:
             color = arcade.color.BLACK
@@ -422,9 +441,14 @@ class ChessApp(arcade.Window):
                 return
             
             # only king can move if check
-            if self.play_board._check and selection.type != 'king':
-                self._reset_selection()
-                return
+            if self.play_board._check:
+                if selection.type != 'king':
+                    self._reset_selection()
+                    return
+                else:
+                    # TODO: other pieces can move if they can block check
+                    # TODO: king can move, but not into another check, if no available moves - checkmate
+                    pass 
 
             # toggle selection
             if self._selected_piece == (i, j):

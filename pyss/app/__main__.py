@@ -28,6 +28,11 @@ def argparser():
     app_cfg_parser.add_argument("-ds", "--disable-stats", action="store_true", default=False,
                         help="Disable stats")
     
+    app_cfg_parser.add_argument('-inv', '--invert', action='store_true', default=False,
+                        help="Invert board orientation")
+    app_cfg_parser.add_argument('-rot', '--rotate', action='store_true', default=False,
+                        help="Rotate board orientation")
+    
     # subparser to set board config with flags
     board_cfg_parser = parser.add_argument_group("Board Config")
     board_cfg_parser.add_argument("-nk", "--no-knights", action="store_true", default=False,
@@ -68,7 +73,7 @@ def main():
     
 
     app = ChessApp(width=args.width, height=args.height)
-    app.setup(depth=args.depth, stat_draw=not args.disable_stats, enable_turns=not args.disable_turns,
+    app.setup(invert=args.invert, rotate=args.rotate, depth=args.depth, stat_draw=not args.disable_stats, enable_turns=not args.disable_turns,
               board_config=default_board_cfg)
 
     arcade.run()
