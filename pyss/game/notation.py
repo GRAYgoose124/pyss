@@ -1,13 +1,13 @@
 
 
-def get_file(position):
-    """Returns the file of a given position"""
-    return chr(ord('a') + position[1])
-
-
 def get_rank(position):
+    """Returns the file of a given position"""
+    return chr((7 - position[1]) + ord('a'))
+
+
+def get_file(position):
     """Returns the rank of a given position"""
-    return position[0] + 1
+    return 8 - position[0]
 
 
 def position_to_notation(position: tuple):
@@ -21,7 +21,7 @@ def position_to_notation(position: tuple):
         (str): The notation of the position
             example: "a1"
     """
-    return f"{get_file(position)}{get_rank(position)}"
+    return f"{get_rank(position)}{get_file(position)}"
 
 
 def notation_to_position(notation: str):
@@ -35,7 +35,7 @@ def notation_to_position(notation: str):
         (tuple): The position of the notation
             example: (0, 0)
     """
-    return (get_rank(notation), ord(notation[0]) - ord('a'))
+    return (get_file(notation), ord(notation[0]) - ord('a'))
 
 
 def move_piece_notation(piece_note, position, move, capture=False, check=False, checkmate=False):

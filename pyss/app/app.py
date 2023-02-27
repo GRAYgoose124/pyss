@@ -66,6 +66,10 @@ class ChessApp(arcade.Window):
         self._depth_search = depth - 1 if depth else self._depth_search
         self._turns_enabled = enable_turns
         self._enable_stat_draw = stat_draw
+
+        self._reset_selection()
+        self._reset_depth_bins()
+
         self.turn = "white"
         self._turn_count = 0
 

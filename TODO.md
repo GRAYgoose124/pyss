@@ -2,3 +2,4 @@
 - pawn promotion
 - castling blocked by enemy line of sight
 - check/checkmate
+- file is backwards - notation messed up
