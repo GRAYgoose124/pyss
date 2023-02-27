@@ -2,9 +2,9 @@ import os
 import arcade
 import arcade.gui
 import logging
+from pyss.app.draw_piece import load_pieces
 
 from pyss.app.utils import DEPTH_COLOR_PALETTE
-from pyss.app.draw_piece import create_bishop_shape, create_queen_shape, create_rook_shape, load_pieces
 from ..game.board import Chessboard
 
 
