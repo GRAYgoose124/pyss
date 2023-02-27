@@ -4,7 +4,7 @@ import arcade.gui
 import logging
 
 from pyss.app.utils import DEPTH_COLOR_PALETTE
-from pyss.app.draw_piece import create_bishop_shape, create_queen_shape, create_rook_shape
+from pyss.app.draw_piece import create_bishop_shape, create_queen_shape, create_rook_shape, load_pieces
 from ..game.board import Chessboard
 
 
@@ -62,6 +62,8 @@ class ChessApp(arcade.Window):
         self._score_updated = False
         self._score_updated_on = None
 
+        self._piece_textures = load_pieces()
+
     def setup(self, invert=None, rotate=None, depth=0, enable_turns=True, stat_draw=True, board_config={"no_initial_pieces": False}):
         if rotate is not None:
             self._rotate = rotate
@@ -96,6 +98,7 @@ class ChessApp(arcade.Window):
 
         if self._enable_stat_draw:
             self.__draw_stats()
+
 
     def update(self, delta_time):
         if delta_time < 1 / 30:
@@ -279,10 +282,16 @@ class ChessApp(arcade.Window):
         else:
             color = arcade.color.BLACK
 
-        arcade.draw_text(self.play_board[i, j].unicode,
-                            self.offset[0] + (ix * self.tile_size + self.tile_size * 0.5),
-                            self.offset[1] + (jx * self.tile_size + self.tile_size * 0.5),
-                            color, self.tile_size * .5, width=self.tile_size, align="center", anchor_x="center", anchor_y="center")
+        # arcade.draw_text(self.play_board[i, j].unicode,
+        #                     self.offset[0] + (ix * self.tile_size + self.tile_size * 0.5),
+        #                     self.offset[1] + (jx * self.tile_size + self.tile_size * 0.5),
+        #                     color, self.tile_size * .5, width=self.tile_size, align="center", anchor_x="center", anchor_y="center")
+        piece = self.play_board[i, j]
+        tex = self._piece_textures[piece.color][piece.type]
+        tex.set_position(self.offset[0] + (i * self.tile_size + self.tile_size * 0.5),
+                    self.offset[1] + (j * self.tile_size + self.tile_size * 0.5))
+        tex.scale = self.tile_size / 170
+        tex.draw()
 
     def __draw_pieces(self):
         """Draws the pieces on the board."""
