@@ -219,17 +219,17 @@ rook:
     black:
     - !!python/tuple
       - 0
-      - 0
+      - 7
     - !!python/tuple
       - 7
-      - 0
+      - 7
     white:
     - !!python/tuple
+      - 7
       - 0
-      - 7
     - !!python/tuple
-      - 7
-      - 7
+      - 0
+      - 0
   notation: R
   unicode:
     black: "\u265C"
