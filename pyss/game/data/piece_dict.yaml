@@ -38,11 +38,11 @@ king:
   initial_positions:
     white:
     - !!python/tuple
-      - 3
+      - 4
       - 0
     black:
     - !!python/tuple
-      - 3
+      - 4
       - 7
   notation: K
   unicode:
@@ -193,11 +193,11 @@ queen:
   initial_positions:
     white:
     - !!python/tuple
-      - 4
+      - 3
       - 0
     black:
     - !!python/tuple
-      - 4
+      - 3
       - 7
   notation: Q
   unicode:
