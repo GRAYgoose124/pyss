@@ -2,9 +2,9 @@ import os
 import arcade
 import arcade.gui
 import logging
+from pyss.app.draw_piece import load_pieces
 
 from pyss.app.utils import DEPTH_COLOR_PALETTE
-from pyss.app.draw_piece import create_bishop_shape, create_queen_shape, create_rook_shape, load_pieces
 from ..game.board import Chessboard
 
 
@@ -58,7 +58,7 @@ class ChessApp(arcade.Window):
         self._turns_enabled = True
         self._turn_count = 1
         self.turn = "white"
-
+g
         self._score_updated = False
         self._score_updated_on = None
 

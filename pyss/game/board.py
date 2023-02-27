@@ -155,8 +155,7 @@ class Chessboard:
             # check for castling by checking if king and rook have moved
             if not piece.has_moved:
                 # TODO: Should probably make a staticmethod to get initial positions for a given piece
-                other_positions = Piece(
-                    piece.color, "rook" if piece.type == "king" else "king").initial_positions
+                other_positions = piece_dict["rook" if piece.type == "king" else "king"]["initial_positions"][piece.color]
                 for other_pos in other_positions:
                     other_piece = self[other_pos]
                     if other_piece and not other_piece.has_moved:
@@ -279,6 +278,7 @@ class Chessboard:
         """
         en_passanted = False
         capture = False
+        castled = False
 
         piece = self[position]
         other = self[new_position]
@@ -288,70 +288,70 @@ class Chessboard:
             return
 
         # check if the move is a castle, this presumes that it's a valid castle. (semi-unsafe)
-        if piece.type in ["king", "rook"]:
-            if other and other.type in ["king", "rook"] and other.type != piece.type:
-                del self[new_position]
-                del self[position]
+        if piece.type in ["king", "rook"] and other and other.type in ["king", "rook"] and\
+            other.type != piece.type and other.color == piece.color:
+            del self[new_position]
+            del self[position]
 
-                # castle the king and rook
-                # the rooks can be on either side of the king and 2 or 3 spaces away
-                # the right rook will end up on file 5 and the left on file 3
-                # the king will move +2 or -2 spaces
-                # left rook
-                if position[0] == 7:
-                    other_position = (5, position[1])
-                    piece_position = (4, position[1])
-                # right rook
-                elif position[0] == 0:
-                    other_position = (1, position[1])
-                    piece_position = (2, position[1])
-                # king
+            # castle the king and rook
+            # the rooks can be on either side of the king and 2 or 3 spaces away
+            # the right rook will end up on the other side of the king
+            # the king will move +2 or -2 spaces
+            # right rook moving
+            if position[0] == 7:
+                king, rook = (5, 6)
+                castled = "kingside"
+            # left rook moving
+            elif position[0] == 0:
+                king, rook = (3, 2)
+                castled = "queenside"
+            # king
+            else:
+                # moving right
+                if position[0] < new_position[0]:
+                    king, rook = (6, 5)
+                    castled = "kingside"
+                # moving left
                 else:
-                    # moving right
-                    if position[0] < new_position[0]:
-                        other_position = (4, position[1])
-                        piece_position = (5, position[1])
-                    # moving left
-                    else:
-                        other_position = (2, position[1])
-                        piece_position = (1, position[1])
+                    king, rook = (2, 3)
+                    castled = "queenside"
 
-                self[other_position] = other
-                self[piece_position] = piece
-
+            other.has_moved = True
+            piece.has_moved = True
+            self[king if other.type == "king" else rook, position[1]] = other
+            self[king if piece.type == "king" else rook, position[1]] = piece
+        else:
+            # if king, you cannot take, only check and checkmate
+            if other and other.type == "king":
                 return
 
-        # if king, you cannot take, only check and checkmate
-        if other and other.type == "king":
-            return
+            # reset en passant state if not pawn moving.
+            # This is partially destructive and part of why this is a semi-unsafe move.
+            if piece.type != "pawn" and self.en_passant_available:
+                self.en_passant_available = False
 
-        # reset en passant state if not pawn moving.
-        # This is partially destructive and part of why this is a semi-unsafe move.
-        if piece.type != "pawn" and self.en_passant_available:
-            self.en_passant_available = False
+            if piece.type == "pawn":
+                # TODO: check for promotions
+                # Jump + En Passant
+                if abs(new_position[1] - position[1]) == 2 and position in piece.initial_positions:
+                    self.en_passant_available = new_position
+                else:
+                    # check if pawn is capturing en passant, en_passant_available is the position of the pawn that can be captured
+                    vector = (new_position[0] - position[0],
+                            new_position[1] - position[1])
+                    logger.debug("Vector: ", vector, "Valid Captures: ", piece.valid_captures, "En Passant Available: ", self.en_passant_available)
+                    if self.en_passant_available and new_position == self.en_passant_available and vector not in piece.valid_captures:
+                        del self[self.en_passant_available]
+                        en_passanted = True
+                        # new position is actually behind the captured pawn
+                        new_position = (new_position[0], self.en_passant_available[1] + 1 if piece.color ==
+                                        "white" else self.en_passant_available[1] - 1)
+                    self.en_passant_available = False    
 
-        if piece.type == "pawn":
-            # TODO: check for promotions
-            # Jump + En Passant
-            if abs(new_position[1] - position[1]) == 2 and position in piece.initial_positions:
-                self.en_passant_available = new_position
-            else:
-                # check if pawn is capturing en passant, en_passant_available is the position of the pawn that can be captured
-                vector = (new_position[0] - position[0],
-                          new_position[1] - position[1])
-                logger.debug("Vector: ", vector, "Valid Captures: ", piece.valid_captures, "En Passant Available: ", self.en_passant_available)
-                if self.en_passant_available and new_position == self.en_passant_available and vector not in piece.valid_captures:
-                    del self[self.en_passant_available]
-                    en_passanted = True
-                    # new position is actually behind the captured pawn
-                    new_position = (new_position[0], self.en_passant_available[1] + 1 if piece.color ==
-                                    "white" else self.en_passant_available[1] - 1)
-                self.en_passant_available = False    
-
-        # move the piece
-        del self[position]
-        self[new_position] = piece
-        piece.has_moved = True
+            # move the piece
+            del self[position]
+            self[new_position] = piece
+            piece.has_moved = True
 
         # check if the move is a capture
         if other:
@@ -371,7 +371,7 @@ class Chessboard:
         # TODO: to append check/checkmate it must be checked here...
         self.move_history.append(generate_notation(
             piece.type, piece.notation, position, new_position, capture=capture, 
-            en_passant=en_passanted, check=self._check, checkmate=self._checkmate)
+            en_passant=en_passanted, check=self._check, checkmate=self._checkmate, castle=castled)
         )
         
     # define index access to board
