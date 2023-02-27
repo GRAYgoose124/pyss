@@ -4,7 +4,7 @@ import arcade.gui
 import logging
 
 from pyss.app.utils import DEPTH_COLOR_PALETTE
-
+from pyss.app.draw_piece import create_bishop_shape, create_queen_shape, create_rook_shape
 from ..game.board import Chessboard
 
 
@@ -96,8 +96,6 @@ class ChessApp(arcade.Window):
 
         if self._enable_stat_draw:
             self.__draw_stats()
-
-
 
     def update(self, delta_time):
         if delta_time < 1 / 30:
