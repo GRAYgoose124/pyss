@@ -54,14 +54,14 @@ def move_piece_notation(piece_note, position, move, capture=False):
 
 
 def generate_notation(piece_type, piece_note, position,
-                      new_position=None, capture=False, check=False, checkmate=False):
+                      new_position=None, capture=False, check=False, checkmate=False, en_passant=False):
     """Returns the notation of the piece at a given position"""
     position = position_to_notation(position)
     if new_position:
         new_position = position_to_notation(new_position)
 
     if piece_type == "pawn":
-        notation = f"{position}{'x' if capture else '-'}{new_position}"
+        notation = f"{position}{'x' if capture else '-'}{new_position}{en_passant * ' e.p.'}"
     else:
         if not new_position:
             notation = f"{piece_note}{position}"

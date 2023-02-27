@@ -1,5 +1,6 @@
 import os
 import arcade
+import arcade.gui
 import logging
 
 from pyss.app.utils import DEPTH_COLOR_PALETTE
@@ -15,32 +16,41 @@ class ChessApp(arcade.Window):
         super().__init__(width, height, "PγssChεss")
 
         # app setup
-        self.tile_size = min(width, height) // 8
-        self.board_size = self.tile_size * 8
-        self.offset = (
-            self.width - self.board_size) // 2, (self.height - self.board_size) // 2
-
-        self._display_board = self.__create_board()
         self._rotate = True
         self._invert = True
         self._depth_search = 2
 
         self._enable_stat_draw = True
 
-            # textures
-        root = os.path.dirname(os.path.realpath(__file__))
-        self._black_placeholder_texture = arcade.load_texture(os.path.join(root, "assets/black.png"))
+        # display config
+        self.tile_size = (min(width, height) - 50) // 8
+        self.board_size = self.tile_size * 8
+        self.offset = (
+            self.width - self.board_size) // 2, (self.height - self.board_size) // 2
 
-            # selection
+        # textures
+        root = os.path.dirname(os.path.realpath(__file__))
+        self._black_placeholder_texture = arcade.load_texture(
+            os.path.join(root, "assets/black.png"))
+
+        self._display_board = self.__create_board()
+        self._rank_and_file_texture = self.__create_rank_and_file()
+
+        # selection
         self._selected_piece = None
         self._old_selected_piece = None
         self._selected_valid_moves = []
-                # depth selection
+        # depth selection
         self._depth_bins = {}
         self._depth_drawlists = {}
         self._selected_depth_bins = None
         self._selected_depth_moves = None
         self._selected_moves_list = None
+
+        # ui
+        self.v_manager = arcade.gui.UIManager()
+        self.v_manager.enable()
+        self.__create_gui()
 
         # game
         self.play_board = Chessboard(initialize=False)
@@ -51,29 +61,32 @@ class ChessApp(arcade.Window):
         self._score_updated = False
         self._score_updated_on = None
 
-    def setup(self, rotate=True, depth=0, enable_turns=True, stat_draw=True, board_config={"no_initial_pieces":False}):
+    def setup(self, rotate=True, depth=0, enable_turns=True, stat_draw=True, board_config={"no_initial_pieces": False}):
         self._rotate = rotate
-        self._depth_search = depth - 1 if depth else 0
+        self._depth_search = depth - 1 if depth else self._depth_search
         self._turns_enabled = enable_turns
         self._enable_stat_draw = stat_draw
+        self.turn = "white"
         self._turn_count = 0
 
-        self.play_board.reset(**board_config) # no_queens=True, no_knights=True, no_bishops=True)
+        # no_queens=True, no_knights=True, no_bishops=True)
+        self.play_board.reset(**board_config)
 
     def on_draw(self):
-        arcade.start_render()
-
+        self.clear()
         self._display_board.draw()
         self.__draw_pieces()
         self.__draw_valid_moves()
 
+        self.v_manager.draw()
+
         if self._enable_stat_draw:
             self.__draw_stats()
 
-        self.__draw_rank_and_file()
+        self._rank_and_file_texture.draw()
 
     def update(self, delta_time):
-        if delta_time < 1 / 60:
+        if delta_time < 1 / 30:
             return
 
     # access
@@ -112,6 +125,26 @@ class ChessApp(arcade.Window):
         self._depth_drawlists = {}
 
     # drawing
+    def __create_gui(self):
+        self.v_box = arcade.gui.UIBoxLayout(vertical=False)
+        # stats button
+        stat_button = arcade.gui.UIFlatButton(
+            text="\u2139", width=20, height=20, font_size=4)
+        stat_button.on_click = lambda _: setattr(
+            self, "_enable_stat_draw", not self._enable_stat_draw)
+        self.v_box.add(stat_button.with_space_around(5))
+
+        # new game button
+        new_game_button = arcade.gui.UIFlatButton(
+            text="\u21BB", width=20, height=20, font_size=4)
+        new_game_button.on_click = lambda _: self.setup()
+        # self.v_box.add(new_game_button.with_space_around(5))
+        # add next to previous button instead of above
+        self.v_box.add(new_game_button.with_space_around(5))
+
+        self.v_manager.add(arcade.gui.UIAnchorWidget(
+            anchor_x="right", anchor_y="bottom", child=self.v_box, align_x=-25, align_y=5))
+
     def __create_board(self):
         """Creates the graphical representation of the board."""
         board = arcade.ShapeElementList()
@@ -130,14 +163,28 @@ class ChessApp(arcade.Window):
                 board.append(tile)
 
         return board
-    
-    def __draw_rank_and_file(self):
+
+    def __create_rank_and_file(self):
         """Draws the rank and file of the board."""
+        drawlist = arcade.SpriteList()
+
         for i in range(8):
-            arcade.draw_text(str(i + 1), self.offset[0] - 20, self.offset[1] + (i * self.tile_size + self.tile_size * .5),
-                             arcade.color.YELLOW, font_size=14, anchor_x="center", anchor_y="center")
-            arcade.draw_text(str(i + 1), self.offset[0] + (i * self.tile_size + self.tile_size * .5), self.offset[1] - 20,
-                             arcade.color.YELLOW, font_size=14, anchor_x="center", anchor_y="center")
+            # arcade.draw_text(str(i + 1), self.offset[0] - 15, self.offset[1] + (i * self.tile_size + self.tile_size * .5),
+            #                  arcade.color.YELLOW, font_size=14, anchor_x="center", anchor_y="center")
+            # # draw file at top of board
+            # arcade.draw_text(chr(ord('a') + i), self.offset[0] + (i * self.tile_size + self.tile_size * .5),
+            #                     self.offset[1] + self.board_size + 10, arcade.color.YELLOW, font_size=14)
+            # append to drawlist using create_text_image instead
+            drawlist.append(arcade.create_text_sprite(str(i + 1), start_x=self.offset[0] - 20,
+                                                      start_y=self.offset[1] + (
+                                                          i * self.tile_size + self.tile_size * .5),
+                                                      color=arcade.color.YELLOW, font_size=14))
+            drawlist.append(arcade.create_text_sprite(chr(ord('a') + i), start_x=self.offset[0] + (i * self.tile_size + self.tile_size * .5),
+                                                      start_y=self.offset[1] +
+                                                      self.board_size + 5,
+                                                      color=arcade.color.YELLOW, font_size=14))
+
+        return drawlist
 
     def __draw_stats(self):
         """Draws the stats of the game."""
@@ -145,42 +192,51 @@ class ChessApp(arcade.Window):
         FONT_COLOR = arcade.color.RED
 
         # stats is middle right of the screen
-        stats_offset = self.width - 100, self.height // 2
-        box_size = (175, 375)
+        stats_offset = self.width - 120, self.height // 2
+        box_size = (150, 340)
 
         # draw placeholder texture as 100x300 transparent box at the offset
-        arcade.draw_texture_rectangle(*stats_offset, *box_size, self._black_placeholder_texture, alpha=128)
+        arcade.draw_texture_rectangle(
+            *stats_offset, *box_size, self._black_placeholder_texture, alpha=128)
 
         if self._turns_enabled:
             # draw at top of stat box which is centered on stats_offset
-            text_offset = stats_offset[0] - box_size[0] // 4, stats_offset[1] + box_size[1] // 2 - 10
+            text_offset = stats_offset[0] - \
+                box_size[0] // 4, stats_offset[1] + box_size[1] // 2 - 10
             arcade.draw_text(f"Turn {self._turn_count}: {self.turn}", *text_offset, FONT_COLOR, FONT_SIZE, width=100, align="center",
                              anchor_x="center", anchor_y="center", font_name=("Lucida Console",))
 
         # update score if turn has changed
         if self.turn != self._score_updated_on:
-            self._score_updated = sum([p.value for p in self.play_board._by_color["white"]]) - sum([p.value for p in self.play_board._by_color["black"]])
+            self._score_updated = sum([p.value for p in self.play_board._by_color["white"]]) - sum(
+                [p.value for p in self.play_board._by_color["black"]])
             self._score_updated_on = self.turn
 
         # draw score
-        score_offset = stats_offset[0] - box_size[0] // 4, stats_offset[1] - box_size[1] // 2 + 10
+        score_offset = stats_offset[0] - \
+            box_size[0] // 4, stats_offset[1] - box_size[1] // 2 + 10
         arcade.draw_text(f"Score: {self._score_updated}", *score_offset, FONT_COLOR, FONT_SIZE, width=100, align="center",
-                            anchor_x="center", anchor_y="center", font_name=("Lucida Console",))
+                         anchor_x="center", anchor_y="center", font_name=("Lucida Console",))
 
         # active pieces count
         # arcade.draw_text(f"White: {len(self.play_board._by_color['white'])}", 10, 50, FONT_COLOR, FONT_SIZE)
         # arcade.draw_text(f"Black: {len(self.play_board._by_color['black'])}", 10, 70, FONT_COLOR, FONT_SIZE)
-        # active piece count 
-        active_piece_offset = stats_offset[0] - box_size[0] // 4, stats_offset[1] - box_size[1] // 2 + 30
-        arcade.draw_text(f"White: {len(self.play_board._by_color['white'])}", *active_piece_offset, FONT_COLOR, FONT_SIZE)
-        arcade.draw_text(f"Black: {len(self.play_board._by_color['black'])}", active_piece_offset[0], active_piece_offset[1] + 20, FONT_COLOR, FONT_SIZE)
+        # active piece count
+        active_piece_offset = stats_offset[0] - \
+            box_size[0] // 4, stats_offset[1] - box_size[1] // 2 + 30
+        arcade.draw_text(
+            f"White: {len(self.play_board._by_color['white'])}", *active_piece_offset, FONT_COLOR, FONT_SIZE)
+        arcade.draw_text(f"Black: {len(self.play_board._by_color['black'])}",
+                         active_piece_offset[0], active_piece_offset[1] + 20, FONT_COLOR, FONT_SIZE)
 
         # move history
-        last_move_offset = stats_offset[0] - box_size[0] // 3, stats_offset[1] + box_size[1] // 2 - 40
-        arcade.draw_text(f"Last 5 Moves:", *last_move_offset, FONT_COLOR, FONT_SIZE + 2)
+        last_move_offset = stats_offset[0] - \
+            box_size[0] // 3, stats_offset[1] + box_size[1] // 2 - 40
+        arcade.draw_text(f"Last 5 Moves:", *last_move_offset,
+                         FONT_COLOR, FONT_SIZE + 2)
         for i, move in enumerate(self.play_board.move_history[-5:]):
-            arcade.draw_text(f"\t{move}", last_move_offset[0], last_move_offset[1] - (20 + i * 20), FONT_COLOR, FONT_SIZE)
-
+            arcade.draw_text(
+                f"\t{move}", last_move_offset[0], last_move_offset[1] - (20 + i * 20), FONT_COLOR, FONT_SIZE)
 
     def __draw_piece(self, i, j):
         """Draws the piece at the given position."""
@@ -296,7 +352,7 @@ class ChessApp(arcade.Window):
 
             # force rebuild drawlists
             if self._selected_piece in self._depth_drawlists:
-                del(self._depth_drawlists[self._selected_piece])
+                del (self._depth_drawlists[self._selected_piece])
 
             self._selected_depth_bins = depth_bins
 
@@ -400,3 +456,12 @@ class ChessApp(arcade.Window):
                     self.turn = "black" if self.turn == "white" else "white"
 
                 return True
+
+    def __handle_stats_button(self):
+        """Handle the stats button."""
+        if self._stats_enabled:
+            self._stats_enabled = False
+            self._stats_button.text = "Stats"
+        else:
+            self._stats_enabled = True
+            self._stats_button.text = "Hide Stats"

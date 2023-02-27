@@ -255,6 +255,9 @@ class Chessboard:
         """ Semi-unsafely moves a piece destroying any piece that is in the destination.
             This expects that the move is valid under chess rules. 
         """
+        en_passanted = False
+        capture = False
+
         piece = self[*position]
         other = self[*new_position]
 
@@ -294,12 +297,12 @@ class Chessboard:
                 self.add_piece(other, other_position)
                 self.add_piece(piece, piece_position)
                 return
-            
+
         # if king, you cannot take, only check and checkmate
         if other and other.type == "king":
             return
 
-        # reset en passant state if not pawn moving. 
+        # reset en passant state if not pawn moving.
         # This is partially destructive and part of why this is a semi-unsafe move.
         if piece.type != "pawn" and self.en_passant_available:
             self.en_passant_available = False
@@ -315,20 +318,29 @@ class Chessboard:
                           new_position[1] - position[1])
                 if self.en_passant_available and new_position == self.en_passant_available and vector not in piece.valid_captures:
                     del self[self.en_passant_available]
+                    en_passanted = True
                     # new position is actually behind the captured pawn
                     new_position = (self.en_passant_available[0] - 1 if piece.color ==
                                     "white" else self.en_passant_available[0] + 1, new_position[1])
                 self.en_passant_available = False
 
+        if other:
+            capture = True
+
         del self[position]
         self[new_position] = piece
         piece.has_moved = True
-        self.move_history.append(generate_notation(piece.type, piece.notation, position, new_position))
+        self.move_history.append(generate_notation(
+            piece.type, piece.notation, position, new_position, capture=capture, en_passant=en_passanted))
 
     # define index access to board
     def __getitem__(self, key):
-        piece = self.board[key[0]][key[1]]
-        return piece
+        """Returns the piece at a position on the board"""
+        try:
+            piece = self.board[key[0]][key[1]]
+            return piece
+        except IndexError:
+            pass
 
     def __delitem__(self, key):
         """Removes a piece from the board"""

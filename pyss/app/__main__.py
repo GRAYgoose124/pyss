@@ -7,12 +7,18 @@ from .app import ChessApp
 
 def argparser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--depth", type=int, default=2,
+    parser.add_argument("-d", "--depth", type=int, default=3,
                         help="Visual depth")
     parser.add_argument("-dt", "--disable-turns", action="store_true", default=False,
                         help="Disable turns")
     parser.add_argument("-ds", "--disable-stats", action="store_true", default=False,
                         help="Disable stats")
+
+    # window size
+    parser.add_argument("-wi", "--width", type=int, default=800,
+                        help="Window width")
+    parser.add_argument("-hi", "--height", type=int, default=800,
+                        help="Window height")
 
     # subparser to set board config with flags
     board_cfg_parser = parser.add_argument_group("Board Config")
@@ -48,7 +54,7 @@ def main():
         if arg.startswith("no_"):
             default_board_cfg[arg] = getattr(args, arg)
 
-    app = ChessApp()
+    app = ChessApp(width=args.width, height=args.height)
     app.setup(depth=args.depth, stat_draw=not args.disable_stats, enable_turns=not args.disable_turns,
               board_config=default_board_cfg)
 
