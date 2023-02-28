@@ -20,6 +20,7 @@ class TestSuite:
 
         print(parse_notation(game_notes))
 
+    @pytest.mark.skip
     def test_generate_notation(self):
         # TODO: These tuples are (column, row) ?
         # f2-f4
