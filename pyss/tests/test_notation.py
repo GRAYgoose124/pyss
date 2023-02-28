@@ -25,9 +25,12 @@ class TestSuite:
         # TODO: These tuples are (column, row) ?
         # f2-f4
         assert generate_notation("pawn", "", (5, 1), (5, 3)) == "f2-f4"
+        assert generate_notation("pawn", "", (5, 1), (5, 3)) == "f2-f4"
         # e7-e5
         assert generate_notation("pawn", "", (4, 6), (4, 4)) == "e7-e5"
+        assert generate_notation("pawn", "", (4, 6), (4, 4)) == "e7-e5"
         # f4xe5
+        assert generate_notation("pawn", "", (5, 3), (4, 4), capture=True) == "f4xe5"
         assert generate_notation("pawn", "", (5, 3), (4, 4), capture=True) == "f4xe5"
         # d7-d6
         assert generate_notation("pawn", "", (3, 6), (3, 5)) == "d7-d6"
@@ -44,6 +47,7 @@ class TestSuite:
         # Qg5xg3+
         assert generate_notation("queen", "Q", (6, 4), (6, 2), capture=True, check=True) == "Qg5xg3+"
         # h2xg3
+        assert generate_notation("pawn", "", (7, 1), (6, 2), capture=True) == "h2xg3"
         assert generate_notation("pawn", "", (7, 1), (6, 2), capture=True) == "h2xg3"
         # Bd6xg3#
         assert generate_notation("bishop", "B", (3, 5), (6, 2), capture=True, checkmate=True) == "Bd6xg3#"
