@@ -24,7 +24,7 @@ class ChessApp(arcade.Window):
 
         self._depth_search = 2
 
-        self._enable_stat_draw = True
+        self._show_stats_view = True
         self._show_theme_menu = False
 
             # display config
@@ -55,7 +55,7 @@ class ChessApp(arcade.Window):
         # ui
         # self._theme = arcade.gui.Theme()
         self.theme_manager = ThemeManager(os.path.join(root, "assets/themes"))
-        self.v_manager = None
+        self.gui_manager = None
    
         # game
         self.play_board = Chessboard(initialize=False)
@@ -74,11 +74,11 @@ class ChessApp(arcade.Window):
         if invert is not None:
             self._invert = invert
 
-        if self.v_manager is None:
+        if self.gui_manager is None:
             self.theme_manager.setup()
-            self.v_manager = arcade.gui.UIManager(self)
+            self.gui_manager = arcade.gui.UIManager(self)
             self.__create_gui()
-            self.v_manager.enable()    
+            self.gui_manager.enable()    
 
         if self._piece_textures is None:
             self._piece_textures = load_pieces()
@@ -88,7 +88,7 @@ class ChessApp(arcade.Window):
 
         self._depth_search = depth - 1 if depth else self._depth_search
         self._turns_enabled = enable_turns
-        self._enable_stat_draw = stat_draw
+        self._show_stats_view = stat_draw
 
         self._reset_selection()
         self._reset_depth_bins()
@@ -110,23 +110,19 @@ class ChessApp(arcade.Window):
         self.__draw_pieces()
         self.__draw_valid_moves()
 
-        self.v_manager.draw() # TODO: use this instead of __draw_stats()
+        self.gui_manager.draw() # TODO: use this instead of __draw_stats()
         
-        if self._enable_stat_draw:
+        if self._show_stats_view:
             self.__draw_stats()
 
-        # if self._show_theme_menu:
-        #     arcade.draw_circle_filled(175, 10, 10, self.theme_manager._loaded_theme["board"]["light_tile"])
-        #     arcade.draw_circle_filled(175, 10, 5, self.theme_manager._loaded_theme["board"]["dark_tile"])
-
-        #     self.theme_manager._theme_menu.draw()
+    def update(self, delta_time):
+        if delta_time < 1 / 60:
+            return
+        
         if self.theme_manager._reload_required:
+            logger.info("Loading theme...")
             self.__setup_theme()
             self.theme_manager._reload_required = False
-
-    def update(self, delta_time):
-        if delta_time < 1 / 30:
-            return
 
     # access
     def transform(self, i, j):
@@ -165,41 +161,35 @@ class ChessApp(arcade.Window):
 
     # drawing
     def __create_gui(self):
-        self.v_box = arcade.gui.UIBoxLayout(vertical=False)
-        # stats button
+        gui_toolbar = arcade.gui.UIBoxLayout(vertical=False)
+
+        # stats view and button
         stat_button = arcade.gui.UIFlatButton(
             text="\u2139", width=25, height=25, font_size=8)
         stat_button.on_click = lambda _: setattr(
-            self, "_enable_stat_draw", not self._enable_stat_draw)
-        self.v_box.add(stat_button.with_space_around(5))
+            self, "_enable_stat_draw", not self._show_stats_view)
+        gui_toolbar.add(stat_button.with_space_around(5))
 
         # new game button
         new_game_button = arcade.gui.UIFlatButton(
             text="\u21BB", width=25, height=25, font_size=8)
         new_game_button.on_click = lambda _: self.setup()
-        # self.v_box.add(new_game_button.with_space_around(5))
-        # add next to previous button instead of above
-        self.v_box.add(new_game_button.with_space_around(5))
+        gui_toolbar.add(new_game_button.with_space_around(5))
 
         # theme button and menu
         theme_button = arcade.gui.UIFlatButton(
             text="\u263C", width=25, height=25, font_size=8)
-        self.v_box.add(theme_button.with_space_around(5))
+        gui_toolbar.add(theme_button.with_space_around(5))
 
-        self.v_manager.add(arcade.gui.UIAnchorWidget(
-            anchor_x="right", anchor_y="bottom", child=self.v_box, align_x=-25, align_y=5))
+        self.gui_manager.add(arcade.gui.UIAnchorWidget(
+            anchor_x="right", anchor_y="bottom", child=gui_toolbar, align_x=-25, align_y=5))
         
         # theme menu
         tmenu = arcade.gui.UIAnchorWidget(
             anchor_x="left", anchor_y="bottom", child=self.theme_manager._theme_menu, align_x=25, align_y=25)
         
-        self.v_manager.add(tmenu)
-
         # hide theme menu with button
-        theme_button.on_click = lambda _:self.v_manager.remove(tmenu) if tmenu in list(self.v_manager.children.values())[0] else self.v_manager.add(tmenu)
-
-
-        
+        theme_button.on_click = lambda _:self.gui_manager.remove(tmenu) if tmenu in list(self.gui_manager.children.values())[0] else self.gui_manager.add(tmenu)
 
     def __create_board(self):
         """Creates the graphical representation of the board."""

@@ -1,12 +1,12 @@
 board:
   dark_tile: !!python/tuple
-  - 195
-  - 153
-  - 33
+  - 116
+  - 17
+  - 67
   light_tile: !!python/tuple
-  - 181
-  - 153
-  - 29
+  - 226
+  - 67
+  - 108
   outline_color: !!python/tuple
   - 0
   - 0
