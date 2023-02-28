@@ -12,6 +12,8 @@ from ..game.board import Chessboard
 logger = logging.getLogger(__name__)
 
 
+
+
 class ChessApp(arcade.Window):
     def __init__(self, width=800, height=800):
         super().__init__(width, height, "PγssChεss")
@@ -23,6 +25,7 @@ class ChessApp(arcade.Window):
         self._depth_search = 2
 
         self._enable_stat_draw = True
+        self._show_theme_menu = False
 
             # display config
         self.tile_size = (min(width, height) - 50) // 8
@@ -51,15 +54,9 @@ class ChessApp(arcade.Window):
 
         # ui
         # self._theme = arcade.gui.Theme()
-            # theme
         self.theme_manager = ThemeManager(os.path.join(root, "assets/themes"))
-        self.theme_manager.load_theme("default")
-
-            # manager
-        self.v_manager = arcade.gui.UIManager()
-        self.v_manager.enable()
-        self.__create_gui()
-  
+        self.v_manager = None
+   
         # game
         self.play_board = Chessboard(initialize=False)
         self._turns_enabled = True
@@ -69,7 +66,7 @@ class ChessApp(arcade.Window):
         self._score_updated = False
         self._score_updated_on = None
 
-        self._piece_textures = load_pieces()
+        self._piece_textures = None
 
     def setup(self, invert=None, rotate=None, depth=0, enable_turns=True, stat_draw=True, board_config={"no_initial_pieces": False}):
         if rotate is not None:
@@ -77,9 +74,17 @@ class ChessApp(arcade.Window):
         if invert is not None:
             self._invert = invert
 
+        if self.v_manager is None:
+            self.theme_manager.setup()
+            self.v_manager = arcade.gui.UIManager(self)
+            self.__create_gui()
+            self.v_manager.enable()    
+
+        if self._piece_textures is None:
+            self._piece_textures = load_pieces()
+
         if rotate or invert or self._display_board is None or self._rank_and_file_texture is None:
-            self._display_board = self.__create_board()
-            self._rank_and_file_texture = self.__create_rank_and_file()
+            self.__setup_theme()
 
         self._depth_search = depth - 1 if depth else self._depth_search
         self._turns_enabled = enable_turns
@@ -93,8 +98,12 @@ class ChessApp(arcade.Window):
 
         self.play_board.reset(**board_config)
 
+    def __setup_theme(self):
+            self._display_board = self.__create_board()
+            self._rank_and_file_texture = self.__create_rank_and_file()
+
     def on_draw(self):
-        self.clear()
+        arcade.start_render()
         self._display_board.draw()
         self._rank_and_file_texture.draw()
         
@@ -102,10 +111,18 @@ class ChessApp(arcade.Window):
         self.__draw_valid_moves()
 
         self.v_manager.draw() # TODO: use this instead of __draw_stats()
-
+        
         if self._enable_stat_draw:
             self.__draw_stats()
 
+        # if self._show_theme_menu:
+        #     arcade.draw_circle_filled(175, 10, 10, self.theme_manager._loaded_theme["board"]["light_tile"])
+        #     arcade.draw_circle_filled(175, 10, 5, self.theme_manager._loaded_theme["board"]["dark_tile"])
+
+        #     self.theme_manager._theme_menu.draw()
+        if self.theme_manager._reload_required:
+            self.__setup_theme()
+            self.theme_manager._reload_required = False
 
     def update(self, delta_time):
         if delta_time < 1 / 30:
@@ -164,8 +181,25 @@ class ChessApp(arcade.Window):
         # add next to previous button instead of above
         self.v_box.add(new_game_button.with_space_around(5))
 
+        # theme button and menu
+        theme_button = arcade.gui.UIFlatButton(
+            text="\u263C", width=25, height=25, font_size=8)
+        self.v_box.add(theme_button.with_space_around(5))
+
         self.v_manager.add(arcade.gui.UIAnchorWidget(
             anchor_x="right", anchor_y="bottom", child=self.v_box, align_x=-25, align_y=5))
+        
+        # theme menu
+        tmenu = arcade.gui.UIAnchorWidget(
+            anchor_x="left", anchor_y="bottom", child=self.theme_manager._theme_menu, align_x=25, align_y=25)
+        
+        self.v_manager.add(tmenu)
+
+        # hide theme menu with button
+        theme_button.on_click = lambda _:self.v_manager.remove(tmenu) if tmenu in list(self.v_manager.children.values())[0] else self.v_manager.add(tmenu)
+
+
+        
 
     def __create_board(self):
         """Creates the graphical representation of the board."""

@@ -1,8 +1,10 @@
 from __future__ import annotations
+from copy import deepcopy
 import os
 
 from arcade import color
 from dataclasses import asdict, field, dataclass, fields
+import arcade
 from dataclass_wizard import YAMLWizard
 import yaml
 
@@ -36,7 +38,8 @@ class Theme(YAMLWizard):
     stats: dict = field(default_factory=lambda: DEFAULT_THEME["stats"])
     depth: dict = field(default_factory=lambda: DEFAULT_THEME["depth"])
 
-    def from_yaml_file(self, file: str, decoder: type = yaml.FullLoader) -> Theme:
+    @staticmethod
+    def from_yaml_file(file: str, decoder: type = yaml.FullLoader) -> Theme:
         with open(file) as f:
             return Theme(**yaml.load(f.read(), Loader=decoder))
 
@@ -49,10 +52,18 @@ class Theme(YAMLWizard):
     def __getitem__(self, key: str) -> dict:
         return getattr(self, key)
 
-class ThemeManager:
+    def __setitem__(self, key: str, value: dict) -> None:
+        setattr(self, key, value)
+
+
+class ThemeManager(arcade.View):
     def __init__(self, theme_folder: str) -> None:
+        super().__init__()
         self._theme_folder = theme_folder
         self._loaded_theme = None
+        self._reload_required = False
+
+        self._theme_menu = None
 
     def list_themes(self) -> list[str]:
         for theme in os.listdir(self._theme_folder):
@@ -63,7 +74,8 @@ class ThemeManager:
         if ".yml" not in theme:
             theme += ".yml"
 
-        self._loaded_theme = Theme().from_yaml_file(os.path.join(self._theme_folder, theme))
+        self._loaded_theme = Theme.from_yaml_file(os.path.join(self._theme_folder, theme))
+        self._reload_required = True
         return self._loaded_theme
     
     def save_theme(self, theme: str) -> None:
@@ -78,6 +90,42 @@ class ThemeManager:
 
         os.remove(os.path.join(self._theme_folder, theme))
 
+    # arcade view methods
+    def __build_theme_menu(self) -> None:
+        menu = arcade.gui.UIBoxLayout()
+        # create a gui menu list of themes
+        for theme in enumerate(self.list_themes()):
+            def cb(e, theme=theme[1]):
+                self.load_theme(theme)
 
+            loaded = Theme.from_yaml_file(os.path.join(self._theme_folder, theme[1] + ".yml"))
+            # button is 2 tone
+            button = arcade.gui.UIFlatButton(
+                text=theme[1],
+                width=150,
+                height=20,
+                style={
+                    "bg_color": loaded["board"]["light_tile"],
+                    "border_color": loaded["board"]["dark_tile"],
+                })
+            
+            button.on_click = cb
+            menu.add(button)
+
+        self._theme_menu = menu
+
+    def setup(self) -> None:
+        self.load_theme("default")
+        self.__build_theme_menu()
+        
+    def on_show(self) -> None:
+        self._theme_menu.enable()
+
+    def on_hide_view(self):
+        self._theme_menu.disable()
+
+    def on_draw(self):
+        return super().on_draw()
+    
 class ThemeBuilder:
     pass
