@@ -23,32 +23,26 @@ class TestSuite:
     def test_generate_notation(self):
         # TODO: These tuples are (column, row) ?
         # f2-f4
-        assert generate_notation("pawn", "", (1, 5), (3, 5)) == "f2-f4"
+        assert generate_notation("pawn", "", (5, 1), (5, 3)) == "f2-f4"
         # e7-e5
-        assert generate_notation("pawn", "", (6, 4), (4, 4)) == "e7-e5"
+        assert generate_notation("pawn", "", (4, 6), (4, 4)) == "e7-e5"
         # f4xe5
-        assert generate_notation(
-            "pawn", "", (3, 5), (4, 4), capture=True) == "f4xe5"
+        assert generate_notation("pawn", "", (5, 3), (4, 4), capture=True) == "f4xe5"
         # d7-d6
-        assert generate_notation("pawn", "", (6, 3), (5, 3)) == "d7-d6"
+        assert generate_notation("pawn", "", (3, 6), (3, 5)) == "d7-d6"
         # e5xd6
-        assert generate_notation(
-            "pawn", "", (4, 4), (5, 3), capture=True) == "e5xd6"
+        assert generate_notation("pawn", "", (4, 4), (3, 5), capture=True) == "e5xd6"
         # Bf8xd6
-        assert generate_notation(
-            "bishop", "B", (7, 5), (5, 3), capture=True) == "Bf8xd6"
+        assert generate_notation("bishop", "B", (5, 7), (3, 5), capture=True) == "Bf8xd6"
         # g2-g3
-        assert generate_notation("pawn", "", (1, 6), (2, 6)) == "g2-g3"
+        assert generate_notation("pawn", "", (6, 1), (6, 2)) == "g2-g3"
         # Qd8-g5
-        assert generate_notation("queen", "Q", (7, 3), (4, 6)) == "Qd8-g5"
+        assert generate_notation("queen", "Q", (3, 7), (6, 4)) == "Qd8-g5"
         # Ng1-f3
-        assert generate_notation("knight", "N", (0, 6), (2, 5)) == "Ng1-f3"
+        assert generate_notation("knight", "N", (6, 0), (5, 2)) == "Ng1-f3"
         # Qg5xg3+
-        assert generate_notation(
-            "queen", "Q", (4, 6), (2, 6), capture=True, check=True) == "Qg5xg3+"
+        assert generate_notation("queen", "Q", (6, 4), (6, 2), capture=True, check=True) == "Qg5xg3+"
         # h2xg3
-        assert generate_notation(
-            "pawn", "h", (1, 7), (2, 6), capture=True) == "h2xg3"
+        assert generate_notation("pawn", "", (7, 1), (6, 2), capture=True) == "h2xg3"
         # Bd6xg3#
-        assert generate_notation(
-            "bishop", "B", (5, 3), (2, 6), capture=True, checkmate=True) == "Bd6xg3#"
+        assert generate_notation("bishop", "B", (3, 5), (6, 2), capture=True, checkmate=True) == "Bd6xg3#"
