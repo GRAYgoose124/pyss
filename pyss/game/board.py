@@ -139,7 +139,7 @@ class Chessboard:
         return all_valid_moves
 
     def valid_moves(self, position=None):
-        """Returns a list of valid moves for a piece. """
+        """Returns a list of valid moves for a piece at position. """
         valid_moves = []
         piece = self[position]
         if not piece:
@@ -147,10 +147,11 @@ class Chessboard:
 
         if piece.type == "pawn":
             # TODO: check for promotion
-            # check for en passant, self.en_passant_available is the position of the pawn that can be captured
+            # check for en passant, self.en_passant_available[0] is the position of the pawn that can be captured
+            # self.en_passant_available[1] is the position of the new move location
             if self.en_passant_available:
-                if self.en_passant_available[1] == position[1] and abs(self.en_passant_available[0] - position[0]) == 1:
-                    valid_moves.append(self.en_passant_available)
+                if abs(self.en_passant_available[0][0] - position[0]) == 1:
+                    valid_moves.append(self.en_passant_available[1])
         elif piece.type in ["king", "rook"]:
             # check for castling by checking if king and rook have moved
             if not piece.has_moved:
@@ -334,18 +335,20 @@ class Chessboard:
                 # TODO: check for promotions
                 # Jump + En Passant
                 if abs(new_position[1] - position[1]) == 2 and position in piece.initial_positions:
-                    self.en_passant_available = new_position
+                    en_passant_move = (new_position[0], new_position[0] + 1 if piece.color ==
+                                           "black" else new_position[1] - 1)
+                    self.en_passant_available = new_position, en_passant_move # capture, move
                 else:
-                    # check if pawn is capturing en passant, en_passant_available is the position of the pawn that can be captured
+                    # check if pawn is capturing en passant, en_passant_available[0] is the position of the pawn that can be captured
+                    # en_passant_available[1] is the new position for the pawn that captures
                     vector = (new_position[0] - position[0],
                             new_position[1] - position[1])
                     logger.debug("Vector: ", vector, "Valid Captures: ", piece.valid_captures, "En Passant Available: ", self.en_passant_available)
-                    if self.en_passant_available and new_position == self.en_passant_available and vector not in piece.valid_captures:
-                        del self[self.en_passant_available]
+                    if self.en_passant_available and new_position == self.en_passant_available[1] and vector in piece.valid_captures:
+                        del self[self.en_passant_available[0]]
                         en_passanted = True
                         # new position is actually behind the captured pawn
-                        new_position = (new_position[0], self.en_passant_available[1] + 1 if piece.color ==
-                                        "white" else self.en_passant_available[1] - 1)
+                        
                     self.en_passant_available = False    
 
             # move the piece
