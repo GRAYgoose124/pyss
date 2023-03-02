@@ -31,6 +31,7 @@ class PlayableBoard(BaseBoard):
 
     def get_valid_moves(self, position=None):
         """Returns a list of valid moves for a piece. """
+        # TODO: cache until board updates
         valid_moves = []
         piece = self[position]
         if not piece:
@@ -94,12 +95,21 @@ class PlayableBoard(BaseBoard):
     def __find_check_blockers(self, checks, color):
         """Returns a list of pieces that can block the check."""
         blockers = []
-        pass
+        # a blocker is a piece who has valid moves which can block the check paths
+        for position in self.active_pieces[color]:
+            # TODO: Use cached valid moves...
+            for move in self.get_valid_moves(position):
+                # if move is between the vector of the check, it's a blocker
+                for check in checks:
+                    if move[0] > check[0] and move[1] > check[1]:
+                        blockers.append(position)
+        
+        return blockers
 
-    def __find_all_checks(self):
+    def __find_all_checks(self, color):
         """Returns a list of all pieces that are threatening the opposing king."""
         checks = []
-        for position in self.active_pieces[self.active_color]:
+        for position in self.active_pieces[color]:
             check = self.__find_check(position)
             if check:
                 checks.append(check)
@@ -120,10 +130,10 @@ class PlayableBoard(BaseBoard):
 
         return False
 
-    def __find_checkmate(self):
+    def __find_checkmate(self, color):
         # if oppsing king has no valid moves, it's checkmate
         for piece, pos in self.active_pieces.items():
-            if piece.type == "king" and piece.color != self.active_color:
+            if piece.type == "king" and piece.color = self.color:
                 king = pos
                 break
 
@@ -218,8 +228,9 @@ class PlayableBoard(BaseBoard):
         # This si not working, presumably because valid moves isn't correct.
         check_position = self.__find_check(new_position)
         if check_position:
-            self._check = check_position, "white" if self.active_color == "black" else "black"
-            if self.__find_checkmate():
+            color = "white" if self.active_color == "black" else "black"
+            self._check = check_position
+            if self.__find_checkmate(color):
                 self._checkmate = check_position
         else:
             self._check = None
