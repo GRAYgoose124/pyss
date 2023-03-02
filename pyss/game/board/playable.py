@@ -1,114 +1,31 @@
-from copy import deepcopy
 import logging
 
-from functools import lru_cache
-
+from pyss.game.board.base import BaseChessboard
 from pyss.game.notation import generate_notation
-from .piece import piece_dict, Piece
+from ..piece import piece_dict
 
 
 logger = logging.getLogger(__name__)
 
 
-class Chessboard:
-    """Represents a chessboard
-
-        - 8x8 grid of alternating black and white squares
-        - 16 pieces per player
-        - 2 players
-    """
-
+class Chessboard(BaseChessboard):
     def __init__(self, initialize=True):
-        self.en_passant_available = False
-        self.board = None
+        super().__init__(initialize=initialize)
+
         self.move_history = []
 
-        self._active_pieces = None
-        self._by_color = None
-
+        self.en_passant_available = False
         self._check = None
         self._checkmate = None
 
-        if initialize:
-            self.reset()
+    def reset(self):
+        super().reset()
 
-    @staticmethod
-    def initialize(no_pawns=False,
-                   no_left_pawns=False,
-                   no_right_pawns=False,
-                   no_knights=False,
-                   no_rooks=False,
-                   no_bishops=False,
-                   no_queens=False,
-                   no_second_special=False,
-                   interlace_pawns=False,
-                   no_initial_pieces=False,
-                   ):
-        """Initializes the board with the starting positions of the pieces."""
-        board = [[None for _ in range(8)] for _ in range(8)]
-
-        if not no_initial_pieces:
-            already_placed = {'white': [], 'black': []}
-
-            for ty in piece_dict:
-                if no_pawns and ty == "pawn":
-                    continue
-                for color in piece_dict[ty]["initial_positions"]:
-                    for position in piece_dict[ty]["initial_positions"][color]:
-                        if no_left_pawns and ty == "pawn":
-                            if position[1] < 4:
-                                continue
-                        if no_right_pawns and ty == "pawn":
-                            if position[1] > 3:
-                                continue
-
-                        if no_knights and ty == "knight":
-                            continue
-                        if no_rooks and ty == "rook":
-                            continue
-                        if no_bishops and ty == "bishop":
-                            continue
-                        if no_queens and ty == "queen":
-                            continue
-
-                        if no_second_special and ty != "pawn":
-                            if ty in already_placed[color]:
-                                continue
-                            else:
-                                already_placed[color].append(ty)
-
-                        if interlace_pawns and ty == "pawn":
-                            if position[1] % 2 == 0:
-                                continue
-
-                        board[position[0]][position[1]] = Piece(color, ty)
-
-        return board
-
-    def reset(self, **kwargs):
-        """Resets the board to its initial state"""
         self.move_history = []
-        self.en_passant_available = False
 
+        self.en_passant_available = False
         self._check = None
         self._checkmate = None
-        
-        self.board = Chessboard.initialize(**kwargs)
-        self.__init_active_pieces()
-
-    def __init_active_pieces(self):
-        """Updates the active pieces on the board"""
-
-        pieces = {}
-        by_color = {'white': [], 'black': []}
-        for i, row in enumerate(self.board):
-            for j, piece in enumerate(row):
-                if piece:
-                    pieces[piece] = (i, j)
-                    by_color[piece.color].append(piece)
-
-        self._by_color = by_color
-        self._active_pieces = pieces
 
     def valid_moves_to_depth(self, position, depth=3, all_valid_moves=None):
         """Returns a list of valid moves for a piece to a given depth. (max=3) """
@@ -196,63 +113,6 @@ class Chessboard:
 
         # logger.debug(f"Valid moves for {piece} at {position}: {valid_moves}")
         return valid_moves
-
-    def board_safe(self, position, new_position):
-        """Checks if a move is valid between two locations on the board."""
-        # check if new position is in bounds
-        if new_position[0] < 0 or new_position[0] > 7 or new_position[1] < 0 or new_position[1] > 7:
-            return False
-
-        # check if move is to the same position
-        if new_position == position:
-            return False
-
-        # check if move is to an occupied square by same team
-        dest_piece = self[new_position]
-        moving_piece = self[position]
-        if dest_piece and moving_piece and dest_piece.color == moving_piece.color:
-            return False
-
-        return True
-
-    def check_path(self, position, new_position, castling=False):
-        """ Returns true if there are no pieces in a straight line between two positions. """
-        # get the direction of the move
-        direction = (
-            new_position[0] -
-            position[0],
-            new_position[1] -
-            position[1])
-
-        # get the number of spaces between the two positions
-        distance = max(abs(direction[0]), abs(direction[1]))
-        # TODO: Hack so that castling doesn't ignore rooks/kings
-
-        # check if the path is clear
-        seen_enemy = False
-        for i in range(distance):
-            # get the position of the next space in the path
-            next_position = (position[0] +
-                             (i + 1) * direction[0] // distance,
-                             position[1] +
-                             (i + 1) * direction[1] // distance)
-
-            # check if the space is occupied by a friendly piece
-            next_piece = self[next_position]
-            moving_piece = self[position]
-            if next_piece and moving_piece and next_piece.compare_color(moving_piece) and\
-                    next_piece.type not in ["king", "rook"] and not castling:
-                return False
-            # if it's an enemy piece, check if we've already seen one or set
-            # that we have
-            elif next_piece:
-                if seen_enemy:
-                    return False
-                seen_enemy = True
-            elif seen_enemy:
-                return False
-
-        return True
     
     def __find_check(self, position):
         """Returns true if the king is threatened by position."""
@@ -373,33 +233,3 @@ class Chessboard:
             piece.type, piece.notation, position, new_position, capture=capture, 
             en_passant=en_passanted, check=self._check, checkmate=self._checkmate, castle=castled)
         )
-        
-    # define index access to board
-    def __getitem__(self, key):
-        """Returns the piece at a position on the board"""
-        try:
-            piece = self.board[key[0]][key[1]]
-            return piece
-        except IndexError:
-            pass
-
-    def __delitem__(self, key):
-        """Removes a piece from the board"""
-        # find piece in active pieces
-        for real_position, piece in self._active_pieces.items():
-            if piece == key:
-                del self._active_pieces[real_position]
-                self._by_color[self[piece].color].remove(real_position)
-                break
-
-        self.board[key[0]][key[1]] = None
-
-    def __setitem__(self, key, value):
-        """Adds a piece to the board"""
-        # if already a piece there, remove it
-        if self[key]:
-            del self[key]
-
-        self.board[key[0]][key[1]] = value
-        self._active_pieces[value] = key
-        self._by_color[value.color].append(value)

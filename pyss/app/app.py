@@ -5,7 +5,7 @@ import logging
 from pyss.app.draw_piece import load_pieces
 
 from pyss.app.utils import DEFAULT_THEME
-from ..game.board import Chessboard
+from ..game.board.playable import Chessboard
 
 
 logger = logging.getLogger(__name__)
