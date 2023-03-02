@@ -1,6 +1,6 @@
 import logging
 
-from pyss.game.board.base import BaseChessboard
+from pyss.game.board.base import BaseBoard
 from pyss.game.notation import generate_notation
 from ..piece import piece_dict
 
@@ -8,7 +8,7 @@ from ..piece import piece_dict
 logger = logging.getLogger(__name__)
 
 
-class Chessboard(BaseChessboard):
+class PlayableBoard(BaseBoard):
     def __init__(self, initialize=True):
         super().__init__(initialize=initialize)
 
@@ -18,8 +18,8 @@ class Chessboard(BaseChessboard):
         self._check = None
         self._checkmate = None
 
-    def reset(self):
-        super().reset()
+    def reset(self, **kwargs):
+        super().reset(**kwargs)
 
         self.move_history = []
 
@@ -27,35 +27,7 @@ class Chessboard(BaseChessboard):
         self._check = None
         self._checkmate = None
 
-    def valid_moves_to_depth(self, position, depth=3, all_valid_moves=None):
-        """Returns a list of valid moves for a piece to a given depth. (max=3) """
-        if all_valid_moves is None:
-            all_valid_moves = []
-
-        original_piece = self[position]
-        if not original_piece or depth < 0:
-            return all_valid_moves
-
-        # check valid moves for piece
-        valid_moves = self.valid_moves(position)
-        all_valid_moves.append((depth, valid_moves))
-        for move in valid_moves:
-            # simulate move - we don't use getters/setters here because we don't want to update the board
-            move_piece = self[move]
-            self.board[move[0]][move[1]] = original_piece
-
-            # check valid moves for piece
-            self.board[position[0]][position[1]] = None
-            self.valid_moves_to_depth(
-                move, depth=depth - 1, all_valid_moves=all_valid_moves)
-
-            # undo move
-            self.board[move[0]][move[1]] = move_piece
-            self.board[position[0]][position[1]] = original_piece
-
-        return all_valid_moves
-
-    def valid_moves(self, position=None):
+    def get_valid_moves(self, position=None):
         """Returns a list of valid moves for a piece. """
         valid_moves = []
         piece = self[position]
@@ -72,7 +44,8 @@ class Chessboard(BaseChessboard):
             # check for castling by checking if king and rook have moved
             if not piece.has_moved:
                 # TODO: Should probably make a staticmethod to get initial positions for a given piece
-                other_positions = piece_dict["rook" if piece.type == "king" else "king"]["initial_positions"][piece.color]
+                other_positions = piece_dict["rook" if piece.type ==
+                                             "king" else "king"]["initial_positions"][piece.color]
                 for other_pos in other_positions:
                     other_piece = self[other_pos]
                     if other_piece and not other_piece.has_moved:
@@ -113,7 +86,7 @@ class Chessboard(BaseChessboard):
 
         # logger.debug(f"Valid moves for {piece} at {position}: {valid_moves}")
         return valid_moves
-    
+
     def __find_check(self, position):
         """Returns true if the king is threatened by position."""
         # get the piece at the position
@@ -121,17 +94,17 @@ class Chessboard(BaseChessboard):
         # see if the piece can see a king
         if piece:
             # TODO: use _selected_valid_moves instead of valid_moves
-            for move in self.valid_moves(position):
+            for move in self.get_valid_moves(position):
                 next_piece = self[move]
                 if next_piece and next_piece.type == "king" and not next_piece.compare_color(piece):
                     return move
 
         return False
-    
+
     def __find_checkmate(self, position):
         # if king has no valid moves, it's checkmate
         return False
-    
+
     def move(self, position, new_position, update=False):
         """ Semi-unsafely moves a piece destroying any piece that is in the destination.
             This expects that the move is valid under chess rules. 
@@ -149,14 +122,12 @@ class Chessboard(BaseChessboard):
 
         # check if the move is a castle, this presumes that it's a valid castle. (semi-unsafe)
         if piece.type in ["king", "rook"] and other and other.type in ["king", "rook"] and\
-            other.type != piece.type and other.color == piece.color:
+                other.type != piece.type and other.color == piece.color:
             del self[new_position]
             del self[position]
 
             # castle the king and rook
-            # the rooks can be on either side of the king and 2 or 3 spaces away
-            # the right rook will end up on the other side of the king
-            # the king will move +2 or -2 spaces
+            # TODO: should castle be stored in the pieces?
             # right rook moving
             if position[0] == 7:
                 king, rook = (5, 6)
@@ -198,15 +169,16 @@ class Chessboard(BaseChessboard):
                 else:
                     # check if pawn is capturing en passant, en_passant_available is the position of the pawn that can be captured
                     vector = (new_position[0] - position[0],
-                            new_position[1] - position[1])
-                    logger.debug("Vector: ", vector, "Valid Captures: ", piece.valid_captures, "En Passant Available: ", self.en_passant_available)
+                              new_position[1] - position[1])
+                    logger.debug("Vector: ", vector, "Valid Captures: ", piece.valid_captures,
+                                 "En Passant Available: ", self.en_passant_available)
                     if self.en_passant_available and new_position == self.en_passant_available and vector not in piece.valid_captures:
                         del self[self.en_passant_available]
                         en_passanted = True
                         # new position is actually behind the captured pawn
                         new_position = (new_position[0], self.en_passant_available[1] + 1 if piece.color ==
                                         "white" else self.en_passant_available[1] - 1)
-                    self.en_passant_available = False    
+                    self.en_passant_available = False
 
             # move the piece
             del self[position]
@@ -215,7 +187,7 @@ class Chessboard(BaseChessboard):
 
         # check if the move is a capture
         if other:
-            capture = True    
+            capture = True
 
         # check if king is threatened
         # This si not working, presumably because valid moves isn't correct.
@@ -230,6 +202,6 @@ class Chessboard(BaseChessboard):
 
         # TODO: to append check/checkmate it must be checked here...
         self.move_history.append(generate_notation(
-            piece.type, piece.notation, position, new_position, capture=capture, 
+            piece.type, piece.notation, position, new_position, capture=capture,
             en_passant=en_passanted, check=self._check, checkmate=self._checkmate, castle=castled)
         )

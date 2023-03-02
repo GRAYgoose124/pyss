@@ -1,6 +1,6 @@
 import pytest
 
-from pyss.game.board.playable import Chessboard
+from pyss.game.board.playable import PlayableBoard
 
 
 class TestSuite:

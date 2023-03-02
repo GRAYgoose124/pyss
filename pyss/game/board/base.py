@@ -10,7 +10,7 @@ from pyss.game.piece import piece_dict, Piece
 logger = logging.getLogger(__name__)
 
 
-class BaseChessboard:
+class BaseBoard:
     """Represents a chessboard
 
         - 8x8 grid of alternating black and white squares
@@ -19,15 +19,10 @@ class BaseChessboard:
     """
 
     def __init__(self, initialize=True):
-        self.en_passant_available = False
         self.board = None
-        self.move_history = []
 
         self._active_pieces = None
         self._by_color = None
-
-        self._check = None
-        self._checkmate = None
 
         if initialize:
             self.reset()
@@ -87,14 +82,18 @@ class BaseChessboard:
 
     def reset(self, **kwargs):
         """Resets the board to its initial state"""
-        self.move_history = []
-        self.en_passant_available = False
-
-        self._check = None
-        self._checkmate = None
-        
-        self.board = BaseChessboard.initialize(**kwargs)
+        self.board = BaseBoard.initialize(**kwargs)
         self.__init_active_pieces()
+
+    @property
+    def active_pieces(self):
+        """Returns a dictionary of the active pieces on the board"""
+        return self._active_pieces
+
+    @property
+    def by_color(self):
+        """Returns a dictionary of the active pieces on the board"""
+        return self._by_color
 
     def __init_active_pieces(self):
         """Updates the active pieces on the board"""
@@ -105,7 +104,7 @@ class BaseChessboard:
             for j, piece in enumerate(row):
                 if piece:
                     pieces[piece] = (i, j)
-                    by_color[piece.color].append(piece)
+                    by_color[piece.color].append((piece, (i, j)))
 
         self._by_color = by_color
         self._active_pieces = pieces
@@ -165,7 +164,7 @@ class BaseChessboard:
                 return False
 
         return True
-        
+
     # define index access to board
     def __getitem__(self, key):
         """Returns the piece at a position on the board"""
@@ -178,10 +177,10 @@ class BaseChessboard:
     def __delitem__(self, key):
         """Removes a piece from the board"""
         # find piece in active pieces
-        for real_position, piece in self._active_pieces.items():
-            if piece == key:
-                del self._active_pieces[real_position]
-                self._by_color[self[piece].color].remove(real_position)
+        for item in self._active_pieces.items():
+            if item[1] == key:
+                del self._active_pieces[item[0]]
+                self._by_color[self[item[1]].color].remove(item)
                 break
 
         self.board[key[0]][key[1]] = None
@@ -194,4 +193,4 @@ class BaseChessboard:
 
         self.board[key[0]][key[1]] = value
         self._active_pieces[value] = key
-        self._by_color[value.color].append(value)
+        self._by_color[value.color].append((value, key))
