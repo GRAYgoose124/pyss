@@ -335,9 +335,7 @@ class Chessboard:
                 # TODO: check for promotions
                 # Jump + En Passant
                 if abs(new_position[1] - position[1]) == 2 and position in piece.initial_positions:
-                    en_passant_move = (new_position[0], new_position[0] + 1 if piece.color ==
-                                           "black" else new_position[1] - 1)
-                    self.en_passant_available = new_position, en_passant_move # capture, move
+                    self.en_passant_available = new_position, (position[0], position[1] + 1 if piece.color == "white" else position[1] - 1)
                 else:
                     # check if pawn is capturing en passant, en_passant_available[0] is the position of the pawn that can be captured
                     # en_passant_available[1] is the new position for the pawn that captures
