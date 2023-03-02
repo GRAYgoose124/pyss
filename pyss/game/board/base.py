@@ -99,12 +99,12 @@ class BaseBoard:
         """Updates the active pieces on the board"""
 
         pieces = {}
-        by_color = {'white': [], 'black': []}
+        by_color = {'white': {}, 'black': {}}
         for i, row in enumerate(self.board):
             for j, piece in enumerate(row):
                 if piece:
                     pieces[piece] = (i, j)
-                    by_color[piece.color].append((piece, (i, j)))
+                    by_color[piece.color][piece] = (i, j)
 
         self._by_color = by_color
         self._active_pieces = pieces
@@ -180,7 +180,9 @@ class BaseBoard:
         for item in self._active_pieces.items():
             if item[1] == key:
                 del self._active_pieces[item[0]]
-                self._by_color[self[item[1]].color].remove(item)
+                bc = self._by_color[item[0].color]
+
+                del bc[item[0]]
                 break
 
         self.board[key[0]][key[1]] = None
@@ -193,4 +195,4 @@ class BaseBoard:
 
         self.board[key[0]][key[1]] = value
         self._active_pieces[value] = key
-        self._by_color[value.color].append((value, key))
+        self._by_color[value.color][value] = key
