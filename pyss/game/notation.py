@@ -42,12 +42,12 @@ def generate_notation(piece_type, piece_note, position,
                       new_position=None, capture=False, check=False, checkmate=False, en_passant=False, castle=False):
     """Returns the notation of the piece at a given position"""
     if castle == "queenside":
-            return "O-O-O"
+        return "O-O-O"
     elif castle == "kingside":
         return "O-O"
     elif castle:
         return "\u2654"
-        
+
     position = position_to_notation(position)
     if new_position:
         new_position = position_to_notation(new_position)

@@ -27,13 +27,13 @@ class ChessApp(arcade.Window):
         self._show_stats_view = True
         self._show_theme_menu = False
 
-            # display config
+        # display config
         self.tile_size = (min(width, height) - 50) // 8
         self.board_size = self.tile_size * 8
         self.offset = (
             self.width - self.board_size) // 2, (self.height - self.board_size) // 2
-        
-            # textures
+
+        # textures
         root = os.path.dirname(os.path.realpath(__file__))
         self._black_placeholder_texture = arcade.load_texture(
             os.path.join(root, "assets/black.png"))
@@ -41,11 +41,11 @@ class ChessApp(arcade.Window):
         self._display_board = None
         self._rank_and_file_texture = None
 
-            # selection
+        # selection
         self._selected_piece = None
         self._old_selected_piece = None
         self._selected_valid_moves = []
-                # depth selection
+        # depth selection
         self._depth_bins = {}
         self._depth_drawlists = {}
         self._selected_depth_bins = None
@@ -61,7 +61,7 @@ class ChessApp(arcade.Window):
         self.play_board = Chessboard(initialize=False)
         self._turns_enabled = True
         self._turn_count = 1
-        self.turn = "white"
+        self.play_board.active_color = "white"
 
         self._score_updated = False
         self._score_updated_on = None
@@ -93,7 +93,6 @@ class ChessApp(arcade.Window):
         self._reset_selection()
         self._reset_depth_bins()
 
-        self.turn = "white"
         self._turn_count = 1
 
         self.play_board.reset(**board_config)
@@ -106,11 +105,11 @@ class ChessApp(arcade.Window):
         arcade.start_render()
         self._display_board.draw()
         self._rank_and_file_texture.draw()
-        
+
         self.__draw_pieces()
         self.__draw_valid_moves()
 
-        self.gui_manager.draw() # TODO: use this instead of __draw_stats()
+        self.gui_manager.draw()  # TODO: use this instead of __draw_stats()
         
         if self._show_stats_view:
             self.__draw_stats()
@@ -207,7 +206,7 @@ class ChessApp(arcade.Window):
             check = 1 - check
 
         for i in range(8):
-            for j in range(8):                
+            for j in range(8):
                 if (i + j) % 2 == check:
                     tile = create_tile(self.theme_manager._loaded_theme['board']['dark_tile'], i, j)
                 else:
@@ -232,7 +231,6 @@ class ChessApp(arcade.Window):
             if self._rotate:
                 horizontal, vertical = vertical, horizontal
 
-
             drawlist.append(arcade.create_text_sprite(vertical, start_x=self.offset[0] - 20,
                                                       start_y=self.offset[1] + (
                                                           i * self.tile_size + self.tile_size * .5),
@@ -243,7 +241,7 @@ class ChessApp(arcade.Window):
                                                       color=self.theme_manager._loaded_theme['board']['rank_and_file_font_color'], font_size=self.theme_manager._loaded_theme['board']['rank_and_file_font_size']))
         
         return drawlist
-    
+
     def __draw_stats(self):
         """Draws the stats of the game."""
         # stats is middle right of the screen
@@ -262,10 +260,10 @@ class ChessApp(arcade.Window):
                                 anchor_x="center", anchor_y="center")
 
         # update score if turn has changed
-        if self.turn != self._score_updated_on:
-            self._score_updated = sum([p.value for p in self.play_board._by_color["white"]]) - sum(
-                [p.value for p in self.play_board._by_color["black"]])
-            self._score_updated_on = self.turn
+        if self.play_board.active_color != self._score_updated_on:
+            self._score_updated = sum([p[0].value for p in self.play_board._by_color["white"]]) - sum(
+                [p[0].value for p in self.play_board._by_color["black"]])
+            self._score_updated_on = self.play_board.active_color
 
         # draw score
         score_offset = stats_offset[0] - \
@@ -316,7 +314,7 @@ class ChessApp(arcade.Window):
         piece = self.play_board[i, j]
         tex = self._piece_textures[piece.color][piece.type]
         tex.set_position(self.offset[0] + (i * self.tile_size + self.tile_size * 0.5),
-                    self.offset[1] + (j * self.tile_size + self.tile_size * 0.5))
+                         self.offset[1] + (j * self.tile_size + self.tile_size * 0.5))
         tex.scale = self.tile_size / 170
         tex.draw()
 
@@ -329,11 +327,13 @@ class ChessApp(arcade.Window):
                         ix, jx = self.transform(i, j)
 
                         arcade.draw_rectangle_outline(
-                            self.offset[0] + (ix * self.tile_size + self.tile_size * 0.5),
-                            self.offset[1] + (jx * self.tile_size + self.tile_size * 0.5),
+                            self.offset[0] + (ix * self.tile_size +
+                                              self.tile_size * 0.5),
+                            self.offset[1] + (jx * self.tile_size +
+                                              self.tile_size * 0.5),
                             self.tile_size, self.tile_size, arcade.color.RED, 2
                         )
-                        
+
                     self.__draw_piece(i, j)
 
     def __create_moves_list(
@@ -470,10 +470,10 @@ class ChessApp(arcade.Window):
 
         if selection:
             # deselect/block selection if not our turn
-            if self._turns_enabled and selection.color != self.turn:
+            if self._turns_enabled and selection.color != self.play_board.active_color:
                 self._reset_selection()
                 return
-            
+
             # only king can move if check
             if self.play_board._check:
                 if selection.type != 'king':
@@ -482,7 +482,7 @@ class ChessApp(arcade.Window):
                 else:
                     # TODO: other pieces can move if they can block check
                     # TODO: king can move, but not into another check, if no available moves - checkmate
-                    pass 
+                    pass
 
             # toggle selection
             if self._selected_piece == (i, j):
@@ -496,15 +496,15 @@ class ChessApp(arcade.Window):
             if self._depth_search:
                 # Depth is recursive over .valid_moves()
                 if self._selected_depth_moves is None:
-                    self._selected_depth_moves = self.play_board.valid_moves_to_depth(
+                    self._selected_depth_moves = self.play_board.all_valid_moves_to_depth(
                         self._selected_piece, depth=self._depth_search)
             else:
                 # Depth is 0, so just get valid moves
-                self._selected_valid_moves = self.play_board.valid_moves(
+                self._selected_valid_moves = self.play_board.get_valid_moves(
                     self._selected_piece)
         else:
             self._reset_selection()
-    
+
     def __make_valid_move_handler(self, i, j):
         """Make a valid move."""
         # check if any valid moves are ready
@@ -520,9 +520,9 @@ class ChessApp(arcade.Window):
         if (i, j) in selected_valid_moves:
             other = self.play_board[i, j]
             # king check is a hack because for some reason selecting it swaps the turn - probably because you can't capture it
-            if other and other.type == "king" and other.color != self.turn:
+            if other and other.type == "king" and other.color != self.play_board.active_color:
                 return False
-            
+
             if (i, j) != self._selected_piece:
                 self.play_board.move(self._selected_piece, (i, j), update=True)
                 # self._update_depth_bins([self.selected_piece, (i, j)])
@@ -531,6 +531,6 @@ class ChessApp(arcade.Window):
                 # next turn
                 if self._turns_enabled:
                     self._turn_count += 1
-                    self.turn = "black" if self.turn == "white" else "white"
+                    self.play_board.active_color = "black" if self.play_board.active_color == "white" else "white"
 
                 return True
