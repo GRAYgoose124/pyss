@@ -166,7 +166,7 @@ class ChessApp(arcade.Window):
         stat_button = arcade.gui.UIFlatButton(
             text="\u2139", width=25, height=25, font_size=8)
         stat_button.on_click = lambda _: setattr(
-            self, "_enable_stat_draw", not self._show_stats_view)
+            self, "_show_stats_view", not self._show_stats_view)
         gui_toolbar.add(stat_button.with_space_around(5))
 
         # new game button
@@ -256,7 +256,7 @@ class ChessApp(arcade.Window):
             # draw at top of stat box which is centered on stats_offset
             text_offset = stats_offset[0] - \
                 box_size[0] // 4, stats_offset[1] + box_size[1] // 2 - 10
-            arcade.draw_text(f"Turn {self._turn_count}: {self.turn}", *text_offset, self.theme_manager._loaded_theme['stats']['font_color'], self.theme_manager._loaded_theme['stats']['font_size'], width=100, align="center",
+            arcade.draw_text(f"Turn {self._turn_count}: {self.play_board.active_color}", *text_offset, self.theme_manager._loaded_theme['stats']['font_color'], self.theme_manager._loaded_theme['stats']['font_size'], width=100, align="center",
                                 anchor_x="center", anchor_y="center")
 
         # update score if turn has changed
