@@ -17,7 +17,7 @@ class DepthNode:
         last board node and the move that led to this board state.
     """
     parent: Literal['DepthNode'] | None = field(default=None)
-    children: list['DepthNode'] | None = field(default_factory=None)
+    children: list['DepthNode'] | None = field(default_factory=lambda: None)
     move: Move | None = field(default=None)
 
     def add_child(self, child: 'DepthNode'):
@@ -44,6 +44,7 @@ class MoveTree:
 
         self._root = DepthNode()
         self._real_turns = [self._root]
+        self._current_node = self._root
 
     def to_board(self) -> BaseBoard:
         """ Return the board state represented by the given node.
@@ -71,3 +72,4 @@ class MoveTree:
 
         if real_turn:
             self._real_turns.append(child)
+            self._current_node = child

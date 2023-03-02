@@ -12,6 +12,8 @@ class PlayableBoard(BaseBoard):
     def __init__(self, initialize=True):
         super().__init__(initialize=initialize)
 
+        self.active_color = "white"
+
         self.move_history = []
 
         self.en_passant_available = False

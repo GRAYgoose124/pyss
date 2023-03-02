@@ -62,7 +62,7 @@ class ChessApp(arcade.Window):
         self.play_board = Chessboard(initialize=False)
         self._turns_enabled = True
         self._turn_count = 1
-        self.turn = "white"
+        self.play_board.active_color = "white"
 
         self._score_updated = False
         self._score_updated_on = None
@@ -86,7 +86,6 @@ class ChessApp(arcade.Window):
         self._reset_selection()
         self._reset_depth_bins()
 
-        self.turn = "white"
         self._turn_count = 1
 
         self.play_board.reset(**board_config)
@@ -231,14 +230,14 @@ class ChessApp(arcade.Window):
             # draw at top of stat box which is centered on stats_offset
             text_offset = stats_offset[0] - \
                 box_size[0] // 4, stats_offset[1] + box_size[1] // 2 - 10
-            arcade.draw_text(f"Turn {self._turn_count}: {self.turn}", *text_offset, self._theme['stats']['font_color'], self._theme['stats']['font_size'], width=100, align="center",
+            arcade.draw_text(f"Turn {self._turn_count}: {self.play_board.active_color}", *text_offset, self._theme['stats']['font_color'], self._theme['stats']['font_size'], width=100, align="center",
                              anchor_x="center", anchor_y="center")
 
         # update score if turn has changed
-        if self.turn != self._score_updated_on:
+        if self.play_board.active_color != self._score_updated_on:
             self._score_updated = sum([p[0].value for p in self.play_board._by_color["white"]]) - sum(
                 [p[0].value for p in self.play_board._by_color["black"]])
-            self._score_updated_on = self.turn
+            self._score_updated_on = self.play_board.active_color
 
         # draw score
         score_offset = stats_offset[0] - \
@@ -447,7 +446,7 @@ class ChessApp(arcade.Window):
 
         if selection:
             # deselect/block selection if not our turn
-            if self._turns_enabled and selection.color != self.turn:
+            if self._turns_enabled and selection.color != self.play_board.active_color:
                 self._reset_selection()
                 return
 
@@ -497,7 +496,7 @@ class ChessApp(arcade.Window):
         if (i, j) in selected_valid_moves:
             other = self.play_board[i, j]
             # king check is a hack because for some reason selecting it swaps the turn - probably because you can't capture it
-            if other and other.type == "king" and other.color != self.turn:
+            if other and other.type == "king" and other.color != self.play_board.active_color:
                 return False
 
             if (i, j) != self._selected_piece:
@@ -508,6 +507,6 @@ class ChessApp(arcade.Window):
                 # next turn
                 if self._turns_enabled:
                     self._turn_count += 1
-                    self.turn = "black" if self.turn == "white" else "white"
+                    self.play_board.active_color = "black" if self.play_board.active_color == "white" else "white"
 
                 return True

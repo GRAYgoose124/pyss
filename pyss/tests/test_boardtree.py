@@ -1,12 +1,13 @@
 import pytest
 
-from pyss.game.board.playable import PlayableBoard
-from pyss.game.depthtree import MoveTree, DepthNode
+from pyss.game.board.depth import Chessboard
 
 
 class TestSuite:
     def test_boardtree(self):
-        board = PlayableBoard()
+        board = Chessboard()
         board.initialize()
 
-        tree = MoveTree(board)
+        tree = board.valid_move_tree()
+
+        print(tree)
