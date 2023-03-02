@@ -167,7 +167,7 @@ class ChessApp(arcade.Window):
         stat_button = arcade.gui.UIFlatButton(
             text="\u2139", width=25, height=25, font_size=8)
         stat_button.on_click = lambda _: setattr(
-            self, "_enable_stat_draw", not self._show_stats_view)
+            self, "_show_stats_view", not self._show_stats_view)
         gui_toolbar.add(stat_button.with_space_around(5))
 
         # new game button
