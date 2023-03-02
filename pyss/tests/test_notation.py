@@ -35,9 +35,11 @@ class TestSuite:
         # d7-d6
         assert generate_notation("pawn", "", (3, 6), (3, 5)) == "d7-d6"
         # e5xd6
-        assert generate_notation("pawn", "", (4, 4), (3, 5), capture=True) == "e5xd6"
+        assert generate_notation(
+            "pawn", "", (4, 4), (3, 5), capture=True) == "e5xd6"
         # Bf8xd6
-        assert generate_notation("bishop", "B", (5, 7), (3, 5), capture=True) == "Bf8xd6"
+        assert generate_notation(
+            "bishop", "B", (5, 7), (3, 5), capture=True) == "Bf8xd6"
         # g2-g3
         assert generate_notation("pawn", "", (6, 1), (6, 2)) == "g2-g3"
         # Qd8-g5
@@ -45,7 +47,8 @@ class TestSuite:
         # Ng1-f3
         assert generate_notation("knight", "N", (6, 0), (5, 2)) == "Ng1-f3"
         # Qg5xg3+
-        assert generate_notation("queen", "Q", (6, 4), (6, 2), capture=True, check=True) == "Qg5xg3+"
+        assert generate_notation("queen", "Q", (6, 4),
+                                 (6, 2), capture=True, check=True) == "Qg5xg3+"
         # h2xg3
         assert generate_notation("pawn", "", (7, 1), (6, 2), capture=True) == "h2xg3"
         assert generate_notation("pawn", "", (7, 1), (6, 2), capture=True) == "h2xg3"

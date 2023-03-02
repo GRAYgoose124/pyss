@@ -29,6 +29,3 @@ DEFAULT_THEME = {
         "color_palette": DEPTH_COLOR_PALETTE
     }
 }
-
-
-
