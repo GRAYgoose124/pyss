@@ -17,7 +17,7 @@ class PlayableBoard(BaseBoard):
         self.move_history = []
 
         self.en_passant_available = False
-        self._check = None
+        self._checks = None
         self._checkmate = None
 
     def reset(self, **kwargs):
@@ -26,7 +26,7 @@ class PlayableBoard(BaseBoard):
         self.move_history = []
 
         self.en_passant_available = False
-        self._check = None
+        self._checks = None
         self._checkmate = None
 
     def get_valid_moves(self, position=None):
@@ -92,6 +92,18 @@ class PlayableBoard(BaseBoard):
         # logger.debug(f"Valid moves for {piece} at {position}: {valid_moves}")
         return valid_moves
 
+    def can_block_checks(self, position, checks):
+        """Returns true if a piece at position can block a check."""
+        piece = self[position]
+        if not piece:
+            return False
+
+        for move in self.get_valid_moves(position):
+            if all([move[0] > check[0] and move[1] > check[1] for check in checks]):
+                 return True
+
+        return False
+
     def __find_check_blockers(self, checks, color):
         """Returns a list of pieces that can block the check."""
         blockers = []
@@ -100,6 +112,7 @@ class PlayableBoard(BaseBoard):
             # TODO: Use cached valid moves...
             for move in self.get_valid_moves(position):
                 # if move is between the vector of the check, it's a blocker
+                # TODO use board.check_path so that we can validate knights and such DRYly
                 for check in checks:
                     if move[0] > check[0] and move[1] > check[1]:
                         blockers.append(position)
@@ -109,7 +122,7 @@ class PlayableBoard(BaseBoard):
     def __find_all_checks(self, color):
         """Returns a list of all pieces that are threatening the opposing king."""
         checks = []
-        for position in self.active_pieces[color]:
+        for position in self.by_color[color].values():
             check = self.__find_check(position)
             if check:
                 checks.append(check)
@@ -133,7 +146,7 @@ class PlayableBoard(BaseBoard):
     def __find_checkmate(self, color):
         # if oppsing king has no valid moves, it's checkmate
         for piece, pos in self.active_pieces.items():
-            if piece.type == "king" and piece.color = self.color:
+            if piece.type == "king" and piece.color == color:
                 king = pos
                 break
 
@@ -226,18 +239,20 @@ class PlayableBoard(BaseBoard):
 
         # check if king is threatened
         # This si not working, presumably because valid moves isn't correct.
-        check_position = self.__find_check(new_position)
-        if check_position:
+        check_positions = self.__find_all_checks(self.active_color)
+        if check_positions:
             color = "white" if self.active_color == "black" else "black"
-            self._check = check_position
+            self._checks = check_positions
             if self.__find_checkmate(color):
-                self._checkmate = check_position
+                self._checkmate = check_positions
+
+            logger.debug(f"Check: {self._checks} Checkmate: {self._checkmate}")
         else:
-            self._check = None
+            self._checks = None
             self._checkmate = None
 
         # TODO: to append check/checkmate it must be checked here...
         self.move_history.append(generate_notation(
             piece.type, piece.notation, position, new_position, capture=capture,
-            en_passant=en_passanted, check=self._check, checkmate=self._checkmate, castle=castled)
+            en_passant=en_passanted, check=self._checks, checkmate=self._checkmate, castle=castled)
         )

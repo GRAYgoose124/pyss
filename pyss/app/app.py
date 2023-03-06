@@ -474,17 +474,11 @@ class ChessApp(arcade.Window):
                 self._reset_selection()
                 return
             
-            # only king can move if check
-            if self.play_board._check:
-                if selection.type != 'king':
-                    # if not king, you can only select a piece that can block check
-
-                    self._reset_selection()
-                    return
-                else:
-                    # TODO: other pieces can move if they can block check
-                    # TODO: king can move, but not into another check, if no available moves - checkmate
-                    pass 
+            if self.play_board._checks:
+                # only king or a blocker can move if check
+                if selection.type != 'king' and not self.play_board.can_block_checks((i, j), self.play_board._checks):
+                        self._reset_selection()
+                        return
 
             # toggle selection
             if self._selected_piece == (i, j):
