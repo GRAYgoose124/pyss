@@ -127,7 +127,7 @@ class BaseBoard:
 
         return True
 
-    def check_path(self, position, new_position, castling=False):
+    def check_path(self, position, new_position, castling=False, blockers=None):
         """ Returns true if there are no pieces in a straight line between two positions. """
         # get the direction of the move
         direction = (
@@ -141,16 +141,22 @@ class BaseBoard:
 
         # check if the path is clear
         seen_enemy = False
+        moving_piece = self[position]
         for i in range(distance):
             # get the position of the next space in the path
             next_position = (position[0] +
                              (i + 1) * direction[0] // distance,
                              position[1] +
                              (i + 1) * direction[1] // distance)
-
+            
+            
+            if blockers is not None:
+                logger.debug(f"Checking blockers: {next_position} in {blockers}")
+                if next_position in blockers:
+                    return False
+            
             # check if the space is occupied by a friendly piece
             next_piece = self[next_position]
-            moving_piece = self[position]
             if next_piece and moving_piece and next_piece.compare_color(moving_piece) and\
                     next_piece.type not in ["king", "rook"] and not castling:
                 return False

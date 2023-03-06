@@ -92,17 +92,25 @@ class PlayableBoard(BaseBoard):
         # logger.debug(f"Valid moves for {piece} at {position}: {valid_moves}")
         return valid_moves
 
-    def can_block_checks(self, position, checks):
+    def can_block_checks(self, position, checks, color):
         """Returns true if a piece at position can block a check."""
         piece = self[position]
         if not piece:
             return False
 
-        for move in self.get_valid_moves(position):
-            if all([move[0] > check[0] and move[1] > check[1] for check in checks]):
-                 return True
+        moves = self.get_valid_moves(position)
+        assert moves, f"Piece at {position} has no valid moves."
+        
+        king_pos = next(filter(lambda i: i[0].type == "king" and i[0].color == color, self.active_pieces.items()))[1]
+        # should probably check for all checks, not just any
+        
+        result = []
+        for check in checks:
+            result.append(not self.check_path(check, king_pos, blockers=moves))
 
-        return False
+        logger.debug(f"Can {piece} at {position} block checks on {king_pos}? {result}")
+
+        return all(result)
 
     def __find_check_blockers(self, checks, color):
         """Returns a list of pieces that can block the check."""
@@ -218,8 +226,7 @@ class PlayableBoard(BaseBoard):
                     # check if pawn is capturing en passant, en_passant_available is the position of the pawn that can be captured
                     vector = (new_position[0] - position[0],
                               new_position[1] - position[1])
-                    logger.debug("Vector: ", vector, "Valid Captures: ", piece.valid_captures,
-                                 "En Passant Available: ", self.en_passant_available)
+                    logger.debug(f"Vector: {vector} Valid Captures: {piece.valid_captures} En Passant Available: {self.en_passant_available}")
                     if self.en_passant_available and new_position == self.en_passant_available and vector not in piece.valid_captures:
                         del self[self.en_passant_available]
                         en_passanted = True

@@ -62,6 +62,7 @@ class ChessApp(arcade.Window):
         self._turns_enabled = True
         self._turn_count = 1
         self.turn = "white"
+        self.antiturn = "black"
 
         self._score_updated = False
         self._score_updated_on = None
@@ -474,19 +475,19 @@ class ChessApp(arcade.Window):
                 self._reset_selection()
                 return
             
-            if self.play_board._checks:
-                # only king or a blocker can move if check
-                if selection.type != 'king' and not self.play_board.can_block_checks((i, j), self.play_board._checks):
-                        self._reset_selection()
-                        return
-
             # toggle selection
             if self._selected_piece == (i, j):
                 self._reset_selection()
                 return
             else:
                 self._reset_selection()
-                self._selected_piece = i, j
+                self._selected_piece = i, j  
+
+            if self.play_board._checks:
+                # only king or a blocker can move if check 
+                if selection.type != 'king' and not self.play_board.can_block_checks((i, j), self.play_board._checks, self.turn):
+                    self._reset_selection()
+                    return
 
             # get valid moves
             if self._depth_search:
@@ -528,5 +529,7 @@ class ChessApp(arcade.Window):
                 if self._turns_enabled:
                     self._turn_count += 1
                     self.turn = "black" if self.turn == "white" else "white"
+                    self.antiturn = "black" if self.turn == "black" else "white"
+                    self.play_board.active_color = self.turn # TODO: move turn completely to playboard anyways? move should probably switch this.
 
                 return True
